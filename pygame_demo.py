@@ -6,6 +6,7 @@ import pygame
 import os
 import time
 from pathlib import Path
+import pdb
 
 
 DIRECTIONS = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw']
@@ -83,68 +84,112 @@ class ImageGraph:
         self.start_node = Node(filedata=os.path.join(image_directory,start_image), root=True)
         self.curr_node = self.start_node
         self.node_list = []
+        self.graph = {} # dictionary of nodes, key is (position, direction), value is node
         if next_node is not None:
+            self.graph[(next_node.position,next_node.direction)] = next_node
             self.start_node.left = next_node
             self.start_node.right = next_node
             self.start_node.front = next_node
             self.start_node.back = next_node
-            self.node_list.append(next_node)
         self.image_directory = image_directory
+        self.min_position = float('inf')
+        self.max_position = float('-inf')
+        self.min_direction = float('inf')
+        self.max_direction = float('-inf')  
 
     def addnodesfromdir(self, envname='kitchen'):
-        image_nodes = [f for f in os.listdir(self.image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        image_files = [f for f in os.listdir(self.image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
-        for image_file in image_nodes:
-            if envname != image_file[:len(envname)]:
-                continue
-            new_node = Node(os.path.join(self.image_directory,image_file))
-
-
+        for image_file in image_files:
             ##
             ## This stuff should be in "addnode" below
             ##
-            image = new_node.name
-            pos = int(image[len(envname)])
-            position_imagehood = (pos-1,pos, pos+1)
-            dir = DIRECTIONS.index(image[len(envname)+1:])
-            for node in self.node_list:
-                if node.position not in position_imagehood:
+
+            # self.addnode(image_file, envname)
+            if envname != image_file[:len(envname)]:
+                continue
+            new_node = Node(os.path.join(self.image_directory,image_file))
+            self.graph[(new_node.position,new_node.direction)] = new_node
+            # self.node_list.append(new_node)
+
+
+
+            # image = new_node.name
+            # pos = int(image[len(envname)])
+            # position_imagehood = (pos-1,pos, pos+1)
+            # dir = DIRECTIONS.index(image[len(envname)+1:])
+            # pdb.set_trace()
+        for (pos1,dir1), node1 in self.graph.items():
+            for (pos2,dir2), node2 in self.graph.items():
+                if node1 == node2:
                     continue
-                if dir == (node.direction + 1) % len(DIRECTIONS)  and pos == node.position:
-                    new_node.right = node
-                elif dir == (node.direction + 2) % len(DIRECTIONS) and pos == node.position and new_node.right is None: 
-                    new_node.right = node
-                elif dir == (node.direction - 1) % len(DIRECTIONS) and pos == node.position:
-                    new_node.left = node
-                elif dir == (node.direction - 2) % len(DIRECTIONS) and pos == node.position and new_node.left is None: 
-                    new_node.left = node
-                elif dir == node.direction and pos == node.position+1:
-                    new_node.front = node
-                elif dir == node.direction and pos == node.position-1 :
-                    new_node.back = node
+                # pdb.set_trace()
+                if dir1 == (dir2 - 1) % len(DIRECTIONS) and pos1 == pos2:
+                    node1.right = node2
+                    node2.left = node1
+                elif dir1 == (dir2 - 2) % len(DIRECTIONS) and pos1 == pos2 and node1.right is None:
+                    node1.right = node2
+                    node2.left = node1
+                elif dir1 == (dir2 + 1) % len(DIRECTIONS) and pos1 == pos2:
+                    node1.left = node2
+                    node2.right = node1
+                elif dir1 == (dir2 + 2) % len(DIRECTIONS) and pos1 == pos2 and node1.left is None: 
+                    node1.left = node2
+                    node2.right = node1
+                elif dir1 == dir2 and pos1 == pos2+1:
+                    node1.back = node2
+                    node2.front = node1    
+                elif dir1 == dir2 and pos1 == pos2-1 :
+                    node1.front = node2
+                    node2.back = node1
                 else:
                     continue
-            self.node_list.append(new_node)
-            if len(self.node_list) == 2:
-                self.start_node.left = new_node
-                self.start_node.right = new_node
-                self.start_node.front = new_node
-                self.start_node.back = new_node
+        
+        ### Adjust starting node
+        poses = self.graph.keys()
+        position_set = set([pos for pos,dir in poses])
+        direction_set = set([dir for pos,dir in poses])
+
+        self.min_position = min(position_set)
+        self.max_position = max(position_set)
+        self.min_direction = min(direction_set)
+        self.max_direction = max(direction_set)  
+
+        self.start_node.left = self.graph[(self.min_position,self.min_direction)]
+        self.start_node.right = self.graph[(self.min_position,self.min_direction)]
+        self.start_node.front = self.graph[(self.min_position,self.min_direction)]
+        self.start_node.back = self.graph[(self.min_position,self.min_direction)]
 
     def addnode(self):
         pass
-
+    
     def left(self):
-        self.curr_node = self.curr_node.left
+        if self.curr_node.left is not None:
+            self.curr_node = self.curr_node.left
+        else:
+            #there should be some type of error message here
+            pass
 
     def right(self):
-        self.curr_node = self.curr_node.right
+        if self.curr_node.right is not None:
+            self.curr_node = self.curr_node.right
+        else:
+            #there should be some type of error message here
+            pass
 
     def forward(self):
-        self.curr_node = self.curr_node.front
+        if self.curr_node.front is not None:
+            self.curr_node = self.curr_node.front
+        else:  
+            #there should be some type of error message here
+            pass
 
     def back(self):
-        self.curr_node = self.curr_node.back
+        if self.curr_node.back is not None:
+            self.curr_node = self.curr_node.back
+        else:
+            #there should be some type of error message here
+            pass
 
 
 
@@ -236,7 +281,7 @@ def run_game(graph=None):
 
 if __name__ == '__main__':
 
-    test = False
+    test = True
     if test == True:
         # make graph
         graph = ImageGraph()
