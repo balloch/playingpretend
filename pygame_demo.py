@@ -43,33 +43,33 @@ class Node:
             self.envname = envname
             # self.find_neighbors()
     
-    def find_neighbors(self):
-        """
-        finds the neighbors of a node based on images in the same directory
-        """
+    # def find_neighbors(self):
+    #     """
+    #     finds the neighbors of a node based on images in the same directory
+    #     """
         
-        position_neighborhood = (self.position-1,self.position, self.position+1)
-        for neighbor in self.neighbors:
-            if self.envname != neighbor[:len(self.envname)]:
-                continue
-            pos = int(neighbor[len(self.envname)])
-            if pos not in position_neighborhood:
-                continue
-            dir = DIRECTIONS.index(neighbor[len(self.envname)+1:])
-            if dir == (self.direction + 1) % len(DIRECTIONS)  and pos == self.position:
-                self.right = neighbor
-            elif dir == (self.direction + 2) % len(DIRECTIONS) and pos == self.position and self.right is None: 
-                self.right = neighbor
-            elif dir == (self.direction - 1) % len(DIRECTIONS) and pos == self.position:
-                self.left = neighbor
-            elif dir == (self.direction - 2) % len(DIRECTIONS) and pos == self.position and self.left is None: 
-                self.left = neighbor
-            elif dir == self.direction and pos == self.position+1:
-                self.front = neighbor
-            elif dir == self.direction and pos == self.position-1 :
-                self.back = neighbor
-            else:
-                continue
+    #     position_neighborhood = (self.position-1,self.position, self.position+1)
+    #     for neighbor in self.neighbors:
+    #         if self.envname != neighbor[:len(self.envname)]:
+    #             continue
+    #         pos = int(neighbor[len(self.envname)])
+    #         if pos not in position_neighborhood:
+    #             continue
+    #         dir = DIRECTIONS.index(neighbor[len(self.envname)+1:])
+    #         if dir == (self.direction + 1) % len(DIRECTIONS)  and pos == self.position:
+    #             self.right = neighbor
+    #         elif dir == (self.direction + 2) % len(DIRECTIONS) and pos == self.position and self.right is None: 
+    #             self.right = neighbor
+    #         elif dir == (self.direction - 1) % len(DIRECTIONS) and pos == self.position:
+    #             self.left = neighbor
+    #         elif dir == (self.direction - 2) % len(DIRECTIONS) and pos == self.position and self.left is None: 
+    #             self.left = neighbor
+    #         elif dir == self.direction and pos == self.position+1:
+    #             self.front = neighbor
+    #         elif dir == self.direction and pos == self.position-1 :
+    #             self.back = neighbor
+    #         else:
+    #             continue
 
     def __repr__(self) -> str:
         return f"Node({self.filedata})"
@@ -97,7 +97,9 @@ class ImageGraph:
         self.min_direction = float('inf')
         self.max_direction = float('-inf')  
 
-    def addnodesfromdir(self, envname='kitchen'):
+    def addnodesfromdir(self, dir=None, envname='kitchen'):
+        if dir is None:
+            dir = self.image_directory
         image_files = [f for f in os.listdir(self.image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
         for image_file in image_files:
@@ -248,7 +250,10 @@ def run_game(graph=None):
                         graph.right()
                     elif event.key == pygame.K_UP:
                         graph.forward()
+                    elif event.key == pygame.K_DOWN:
+                        graph.back()
                     current_image = pygame.image.load(graph.curr_node.filedata)
+                    print(graph.curr_node.position, graph.curr_node.direction)
 
                 else: ## For testing only, to be deleted
                     if event.key == pygame.K_LEFT:
@@ -280,11 +285,11 @@ def run_game(graph=None):
 
 
 if __name__ == '__main__':
-
-    test = True
+    graph = ImageGraph()
+    test = False
+    
     if test == True:
         # make graph
-        graph = ImageGraph()
         sample_node = Node('images/kitchen3s')
         print('name', sample_node.name)
         print('dir', sample_node.directory)
@@ -292,11 +297,9 @@ if __name__ == '__main__':
         print('direction', sample_node.direction)
         # print('position', sample_node.position)
         # print('position', sample_node.position)
-        sample_node.find_neighbors()
+        # sample_node.find_neighbors()
         print(sample_node.left, sample_node.right, sample_node.front, sample_node.back)
 
-        graph.addnodesfromdir()
-        print(graph.node_list)
+    graph.addnodesfromdir('images')
 
-        run_game(graph)
-    run_game()
+    run_game(graph)
