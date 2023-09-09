@@ -1,5 +1,151 @@
-class HTNPlanner:
+
+from typing import List,Any
+from pydantic import BaseModel, Field
+import heapq
+
+
+class State: #(BaseModel)
+    """
+    A state is a set of predicates that are true in the world.
+    """
+    def __init__(self, vars): #predicates):
+        self.vars = vars
+
+        # super().__init__(**kwargs)
+        # self.predicates = predicates
+
+    def apply_effects(self, predicate_list):
+        pass
+        # for predicate in predicate_list:
+        #     if predicate not in self.predicates:
+        #         self.add_predicate(predicate)
+        #     if 
+        #         self.add_predicate(predicate_function[1])
+        #     self.predicates.append(predicate)
+
+    def sim_apply_effects(self, predicate_list):
+        pass
+        # new_state = State(self.predicates)
+        # for predicate in predicate_list:
+        #     if predicate not in new_state.predicates:
+        #         new_state.add_predicate(predicate)
+        # return new_state
+
+    def add_predicate(self, predicate):
+        self.predicates.append(predicate)
+
+    def delete_predicate(self, predicate):
+        self.predicates.append(predicate)
+
+    def diff(self, other_state):
+        # returns the predicates that are true in self but not in other_state
+        return [x for x in self.predicates if x not in other_state.predicates]
+
+    def __repr__(self):
+        return f"State: {self.predicates}"
+
+
+class Task: #(BaseModel)
+    """
+    A task is a tuple t = (N, T, E, P), where N is a task name, T is a set of terms.
+    The terms of a task are the objects required for the task to be performed.
+    These may be simply symbols, which will be checked for existence ('John' is valid if the state contains 'John'),
+    or they may be predicates, which will be checked for truth ('at(John, Home)' is valid if the state contains 'at(John, Home)').
+    E are the expected effects of the task, which are checked for truth after the task is performed.
+    P is the primitive function, which is null if the task is a compound task. 
+    When the task is called for execution, if it is primitive, it executes the primitive function P.
+    If not, it iteratively calls the functions of its subtasks.
+    """
+    def __init__(self, name, terms, effects, primitive_fn=None, subtasks=[]):
+        # super().__init__(**kwargs)
+        self.name = name
+        self.terms = terms
+        self.effects = effects
+        self.primitive_fn = primitive_fn
+        self.subtasks = subtasks
+
+    def add_subtask(self, subtask):
+        self.subtasks.append(subtask)
+
+    def __call__(self, state, **kwds: Any) -> Any:
+        # If primitive, this is an operator that has some effect on the world
+        # If not primitive, calls its list of subtasks
+        e = ['Execution Errors:']
+        if self.primitive_fn:
+            expected_state = state.sim_apply_effects(self.effects)
+            new_state = self.primitive_fn(state, **kwds)
+            diff = new_state.diff(state)
+            if diff :
+                return [(self.name, 'StateMatch', state, diff)]
+            else: 
+                return []
+        else:
+            # call each function in a list of functions self.subtasks
+            for subtask in self.subtasks:
+                e.extend(subtask(state, **kwds))
+        return e
+
+    def __repr__(self):
+        return f"Task: {self.name}"
+    
+
+
+class Method: #(BaseModel)
+# A __method__ s a triple m = (NT, DEC, P), where NT is a non-primitive task, DEC is a totally-ordered list of tasks called a decomposition of NT,
+# and P (the set of preconditions) is a boolean formula of first-order predicate calculus.
+
+    def __init__(self, name, subtasks=[], preconditions=[]):
+        # super().__init__(**kwargs)
+        self.name = name
+        self.subtasks = subtasks
+        self.preconditions = preconditions
+
+    def add_subtask(self, subtask):
+        self.subtasks.append(subtask)
+
+    def add_precondition(self, precondition):
+        self.preconditions.append(precondition)
+
+    def __call__(self, task: Task) -> Task:
+        # calling a Method on a Task object will decompose the task into a list of subtasks, which are then written to the Task object's subtasks list
+        # and then the Task object is returned
+
+        # Search for decomposition of task
+        soln_graph = [(0, task.terms, task)]
+        # boundary is a heap of tuples (priority, task_terms, parent_task)
+        # where priority is the number of tasks so far used
+        # we are trying to come up with the shortest subtask lists that decompose a task
+
+        while soln_graph:
+            priority, terms, parent_task = heapq.heappop(soln_graph)
+            if terms == [] and priority == 0:
+                f"Could not decompose with Method {self.name}"
+                return parent_task
+            else:
+                for subtask in self.subtasks:
+                    if(all(x in terms for x in subtask.terms)):
+                        heapq.heappush(soln_graph, (priority+1, task.terms, task))
+        soln_path_next = soln_graph[0]
+        while soln_path_next[0] > 0:
+            task.add_subtask(subtask)
+        # for subtask in self.subtasks:
+        #     if(all(x in subtask.terms for x in task.terms)):
+        #         task.add_subtask(subtask)
+
+    def __repr__(self):
+        return f"Method: {self.name}"
+    
+
+
+# One of the methods we construct needs to check "implies". So for example:
+# State = "The robot is in the living room with John"
+# Q: Does the State imply that John is home?"
+
+
+
+class HTNPlanner: #(BaseModel)
     def __init__(self):
+        # super().__init__(**kwargs)
         self.tasks = {}
         self.methods = {}
 
