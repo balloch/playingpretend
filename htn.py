@@ -74,7 +74,7 @@ class Task: #(BaseModel)
         if self.primitive_fn:
             expected_state = state.sim_apply_effects(self.effects)
             new_state = self.primitive_fn(state, **kwds)
-            diff = new_state.diff(state)
+            diff = new_state.diff(expected_state)
             if diff :
                 return [(self.name, 'StateMatch', state, diff)]
             else: 
@@ -90,8 +90,8 @@ class Task: #(BaseModel)
     
 
 
-class Method: #(BaseModel)
-# A __method__ s a triple m = (NT, DEC, P), where NT is a non-primitive task, DEC is a totally-ordered list of tasks called a decomposition of NT,
+class DecompMethod: #(BaseModel)
+# A decomposition method is a triple m = (NT, DEC, P), where NT is a non-primitive task, DEC is a totally-ordered list of tasks called a decomposition of NT,
 # and P (the set of preconditions) is a boolean formula of first-order predicate calculus.
 
     def __init__(self, name, subtasks=[], preconditions=[]):
