@@ -195,53 +195,63 @@ class ImageGraph:
 
 
 
-def run_game(graph=None):
+class ImageGameDemo:
+    def __init__(self, screen_width=800, screen_height=600, image_directory='images', start_image='outerkitchen.jpg', graph=None):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.image_directory = image_directory
+        self.start_image = start_image
+        self.graph = graph
 
+        self.current_image = None
 
-    # Initialize Pygame
-    pygame.init()
+    def prep_game(self):
+        # Initialize Pygame
+        pygame.init()
 
-    # Set up display
-    screen_width, screen_height = 800, 600
-    screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption('Image Viewer')
+        # Set up display
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption('Image Viewer')
 
-    # Load images from the 'images' directory
-    image_directory = 'images'
-    image_files = [f for f in os.listdir(image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    current_image_index = 0
+        # Load images from the 'images' directory
+        self.image_files = [f for f in os.listdir(self.image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        current_image_index = 0
 
-    # Load the first image
-    if graph:
-        current_image = pygame.image.load(graph.start_node.filedata)
-    else:  ## For testing only, to be deleted
-        current_image = pygame.image.load(os.path.join(image_directory, image_files[current_image_index]))
-    current_image = pygame.transform.scale(current_image, (screen_width, screen_height))
+        # Load the first image
+        if graph:
+            self.current_image = pygame.image.load(graph.start_node.filedata)
+        else:  ## For testing only, to be deleted
+            self.current_image = pygame.image.load(os.path.join(self.image_directory, self.image_files[current_image_index]))
+        self.current_image = pygame.transform.scale(self.current_image, (self.screen_width, self.screen_height))
 
-    # Load button images
-    button_forward = pygame.image.load('forward_button.jpg')  # Provide your button image paths
-    button_left = pygame.image.load('left_button.jpg')
-    button_right = pygame.image.load('right_button.jpg')
+        # Load button images
+        forward_img = pygame.image.load('forward_button.jpg')  # Provide your button image paths
+        left_img = pygame.image.load('left_button.jpg')
+        right_img = pygame.image.load('right_button.jpg')
 
-    # Resize button images
-    button_width, button_height = 50, 50
-    button_forward = pygame.transform.scale(button_forward, (button_width, button_height))
-    button_left = pygame.transform.scale(button_left, (button_width, button_height))
-    button_right = pygame.transform.scale(button_right, (button_width, button_height))
+        # Resize button images
+        self.button_width, self.button_height = 50, 50
+        self.button_forward = pygame.transform.scale(forward_img, (self.button_width, self.button_height))
+        self.button_left = pygame.transform.scale(left_img, (self.button_width, self.button_height))
+        self.button_right = pygame.transform.scale(right_img, (self.button_width, self.button_height))
 
-    # Position buttons
-    button_x = (screen_width - button_width) // 2
-    button_y = screen_height - button_height - 20
-    button_spacing = 20
+        self.button_x = (self.screen_width - self.button_width) // 2
+        self.button_y = self.screen_height - self.button_height - 20
+        self.button_spacing = 20
 
-    # Run the game loop
-    running = True
-    clock = pygame.time.Clock()
+    def play_game(self):
+        # Run the game loop
+        self.running = True
+        self.clock = pygame.time.Clock()
+        while self.running:
+            self.game_loop()
+        # Clean up
+        pygame.quit()
 
-    while running:
+    def game_loop(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                self.running = False
             elif event.type == pygame.KEYDOWN:
                 if graph:
                     if event.key == pygame.K_LEFT:
@@ -252,36 +262,42 @@ def run_game(graph=None):
                         graph.forward()
                     elif event.key == pygame.K_DOWN:
                         graph.back()
-                    current_image = pygame.image.load(graph.curr_node.filedata)
+                    self.current_image = pygame.image.load(graph.curr_node.filedata)
                     print(graph.curr_node.position, graph.curr_node.direction)
 
                 else: ## For testing only, to be deleted
                     if event.key == pygame.K_LEFT:
-                        current_image_index = (current_image_index - 1) % len(image_files)
+                        current_image_index = (current_image_index - 1) % len(self.image_files)
                     elif event.key == pygame.K_RIGHT:
-                        current_image_index = (current_image_index + 1) % len(image_files)
+                        current_image_index = (current_image_index + 1) % len(self.image_files)
                     elif event.key == pygame.K_UP:
-                        current_image_index = (current_image_index + 8) % len(image_files)
+                        current_image_index = (current_image_index + 8) % len(self.image_files)
 
-                    current_image = pygame.image.load(os.path.join(image_directory, image_files[current_image_index]))
-                current_image = pygame.transform.scale(current_image, (screen_width, screen_height))
+                    self.current_image = pygame.image.load(os.path.join(self.image_directory, self.image_files[current_image_index]))
+                self.current_image = pygame.transform.scale(self.current_image, (self.screen_width, self.screen_height))
 
         # Clear the screen
-        screen.fill((0, 0, 0))
+        self.screen.fill((0, 0, 0))
 
         # Draw the current image
-        screen.blit(current_image, (0, 0))
+        self.screen.blit(self.current_image, (0, 0))
 
         # Draw buttons
-        screen.blit(button_forward, (button_x, button_y - button_height - button_spacing))
-        screen.blit(button_left, (button_x - button_width - button_spacing, button_y))
-        screen.blit(button_right, (button_x + button_width + button_spacing, button_y))
+        self.screen.blit(self.button_forward, (self.button_x, self.button_y - self.button_height - self.button_spacing))
+        self.screen.blit(self.button_left, (self.button_x - self.button_width - self.button_spacing, self.button_y))
+        self.screen.blit(self.button_right, (self.button_x + self.button_width + self.button_spacing, self.button_y))
 
         pygame.display.flip()
-        clock.tick(60)
+        self.clock.tick(60)
 
-    # Clean up
-    pygame.quit()
+
+
+def run_game(graph=None):
+    game = ImageGameDemo(graph=graph)
+    game.prep_game()
+    # Position buttons
+
+    game.play_game()
 
 
 if __name__ == '__main__':
