@@ -51,34 +51,76 @@ class llm_planner_assistant(): #BaseModel):
         else:
             self.chatbot = chatbot(kwargs)
 
-    def get_prompt(self, template, query, context, values_dict=None):
-        if template[-3:] == 'txt':
-            with open(template,'r') as f:
-                template_str = f.read()
+    def classify_text(self, text, template_override=None, **context_dict):
+        if template_override is None:
+            template = 'choice_template.txt'
         else:
-            template_str = template
-        prompt_string = effify(ftext=template_str,query=query, context=context) #, **values_dict)
-        return prompt_string
-
-    def classify_text(self, text,context=None, values_dict=None):
-        template = 'choice_template.txt'
-        prompt = self.get_prompt(template, text, context, values_dict)
+            template = template_override
+        prompt = self.get_prompt(template=template, 
+                                 query=text, 
+                                 context_dict=context_dict)
         # Your code here - interact with ChatGPT to predict the category.
         
         predicted_category = self.chatbot(prompt=prompt)
         return predicted_category
 
+    def get_prompt(self, template, query, **context_dict):
+        if template[-3:] == 'txt':
+            with open(template,'r') as f:
+                template_str = f.read()
+        else:
+            template_str = template
+        prompt_string = effify(ftext=template_str,
+                               query=query, 
+                               context_dict=context_dict) #, **values_dict)
+        return prompt_string
 
-def effify(ftext,**kwargs):
+
+def effify(ftext, query, **context_dict):
     """converges a fstring and its arguments into a string"""    
-    return ftext.format(kwargs)
+    return ftext.format(query, context_dict)
 
 
-    
+## example categories
+categories = """
+[Category 1]
+**Name:** Play with my friends
+**Preconditions:** After school
+**Effects:** I will be happy
 
+[Category 2]
+**Name:** Attack with my sword
+**Preconditions:** To slay a dragon
+**Effects:** The dragon will die
+
+[Category 3]
+**Name:** Find a weapon
+**Preconditions:** Once my sword is lost
+**Effects:** I will be sad
+"""
+
+
+
+## example examples
+examples = """
+**Text:** 'After school I will '
+**Category:** Play with my friends
+
+[Example 2]
+**Text:** 'To slay a dragon I need to'
+**Category:** Attack with my sword
+
+[Example 3]
+**Text:** 'Once my sword is lost I must'
+**Category:** Find a weapon
+"""
 
 # Example usage
-text_input = "This is a piece of text you want to classify."
 bot = llm_planner_assistant()
-predicted_category = bot.classify_text(text_input)
+query_text = "Now that I have eaten dinner I will"
+context = dict(examples=examples, categories=categories)
+predicted_category = bot.classify_text(text=query_text, 
+                                       examples=examples,
+                                       categories=categories)
 print("Predicted Category:", predicted_category)
+

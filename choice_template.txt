@@ -3,22 +3,10 @@ In this task, you'll be working on a classification. Your goal is to accurately 
 
 [Category List]
 Here are the categories that you'll be working with:
-1. Category A
-2. Category B
-3. Category C
-...
+{categories}
 
-[Example 1]
-**Text:** 'Sample text belonging to Category A.'
-**Category:** Category A
+[Examples]
+{examples}
 
-[Example 2]
-**Text:** 'Text associated with Category B.'
-**Category:** Category B
-
-[Example 3]
-**Text:** 'An example piece of text categorized as Category C.'
-**Category:** Category C
-
-[Your Task]
-Your task is to develop a Python program that takes a text string as input and outputs the predicted category. "
+[Query]
+{query} "
