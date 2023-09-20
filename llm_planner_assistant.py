@@ -64,55 +64,66 @@ class llm_planner_assistant(): #BaseModel):
         predicted_category = self.chatbot(prompt=prompt)
         return predicted_category
 
-    def get_prompt(self, template, query, **context_dict):
+    def get_prompt(self, template, query, context_dict=None):
         if template[-3:] == 'txt':
             with open(template,'r') as f:
                 template_str = f.read()
         else:
             template_str = template
+        if context_dict is None:
+            context_dict = {}
         prompt_string = effify(ftext=template_str,
                                query=query, 
                                context_dict=context_dict) #, **values_dict)
         return prompt_string
 
 
-def effify(ftext, query, **context_dict):
-    """converges a fstring and its arguments into a string"""    
-    return ftext.format(query, context_dict)
+def effify(ftext, query, context_dict=None):
+    """converges a fstring and its arguments into a string. 
+    query separate to require it"""
+    if context_dict is None:
+        context_dict = {}
+    context_dict['query'] = query    
+    return ftext.format(**context_dict)
+
+# categories = """
+# [Category 1]
+# **Name:** Play with my friends
+# **Preconditions:** After school
+# **Effects:** I will be happy
+
+# [Category 2]
+# **Name:** Attack with my sword
+# **Preconditions:** To slay a dragon
+# **Effects:** The dragon will die
+
+# [Category 3]
+# **Name:** Find a weapon
+# **Preconditions:** Once my sword is lost
+# **Effects:** I will be sad
+# """
+
+
 
 
 ## example categories
+
 categories = """
-[Category 1]
-**Name:** Play with my friends
-**Preconditions:** After school
-**Effects:** I will be happy
-
-[Category 2]
-**Name:** Attack with my sword
-**Preconditions:** To slay a dragon
-**Effects:** The dragon will die
-
-[Category 3]
-**Name:** Find a weapon
-**Preconditions:** Once my sword is lost
-**Effects:** I will be sad
+{Play with my friends, Attack with my sword, Find a weapon}
 """
 
 
 
 ## example examples
 examples = """
-**Text:** 'After school I will '
-**Category:** Play with my friends
+[Query] 'After school I will '
+[Category] Play with my friends
 
-[Example 2]
-**Text:** 'To slay a dragon I need to'
-**Category:** Attack with my sword
+[Query] 'To slay a dragon I need to'
+[Category] Attack with my sword
 
-[Example 3]
-**Text:** 'Once my sword is lost I must'
-**Category:** Find a weapon
+[Query] 'Once my sword is lost I must'
+[Category] Find a weapon
 """
 
 # Example usage
