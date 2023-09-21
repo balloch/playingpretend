@@ -4,7 +4,7 @@ It will be interfacing with the ChatGPT model using simpleaichat to do these fun
 The purpose of this assistant is to help the HTN Planner find a logically reasonable plan from start to goal, 
 using known and primitive actions as often as possible.
 '''
-
+from base_assistant import BaseAssistant
 from simpleaichat import AIChat
 import orjson
 from rich.console import Console
@@ -39,17 +39,14 @@ How to determine when to decompose creative? based on perceived time:
     - if LLM thinks it will take a short time (enter cave, a spell that was casted), then by rule autoassociate-with "Say" e.g. astro says "I casted a magic missile"
 """
 
-class llm_planner_assistant(): #BaseModel):
+class PlannerAssistant(BaseAssistant): #BaseModel):
 
-    def __init__(self, chatbot=None, **kwargs):
-        # super().__init__(**kwargs)
-        if chatbot is None:
-            api_input = input("Please enter your API key: ")
-            self.chatbot=AIChat(
-                console=False,
-                api_key=api_input)
-        else:
-            self.chatbot = chatbot(kwargs)
+    def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
+        super().__init__(llm=llm, 
+                         api_key=api_key, 
+                         model=model, 
+                         system_prompt=system_prompt, 
+                         save_messages=save_messages)
 
     def classify_text(self, text, template_override=None, **context_dict):
         if template_override is None:
@@ -61,30 +58,11 @@ class llm_planner_assistant(): #BaseModel):
                                  context_dict=context_dict)
         # Your code here - interact with ChatGPT to predict the category.
         
-        predicted_category = self.chatbot(prompt=prompt)
+        predicted_category = self.llm(prompt=prompt)
         return predicted_category
 
-    def get_prompt(self, template, query, context_dict=None):
-        if template[-3:] == 'txt':
-            with open(template,'r') as f:
-                template_str = f.read()
-        else:
-            template_str = template
-        if context_dict is None:
-            context_dict = {}
-        prompt_string = effify(ftext=template_str,
-                               query=query, 
-                               context_dict=context_dict) #, **values_dict)
-        return prompt_string
 
 
-def effify(ftext, query, context_dict=None):
-    """converges a fstring and its arguments into a string. 
-    query separate to require it"""
-    if context_dict is None:
-        context_dict = {}
-    context_dict['query'] = query    
-    return ftext.format(**context_dict)
 
 # categories = """
 # [Category 1]
@@ -127,7 +105,7 @@ examples = """
 """
 
 # Example usage
-bot = llm_planner_assistant()
+bot = PlannerAssistant()
 query_text = "Now that I have eaten dinner I will"
 context = dict(examples=examples, categories=categories)
 predicted_category = bot.classify_text(text=query_text, 
