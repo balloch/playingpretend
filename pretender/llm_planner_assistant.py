@@ -61,7 +61,7 @@ class PlannerAssistant(BaseAssistant): #BaseModel):
 
     def classify_text(self, text, template_override=None, **context_dict):
         if template_override is None:
-            template = 'choice_template.txt'
+            template = 'templates/choice_template.txt'
         else:
             template = template_override
         prompt = self.get_prompt(template=template, 
@@ -74,7 +74,7 @@ class PlannerAssistant(BaseAssistant): #BaseModel):
 
     def decompose(self, task, template_override=None, **context_dict):
         if template_override is None:
-            template = 'decompose_template.txt'
+            template = 'templates/decompose_template.txt'
         else:
             template = template_override
         prompt = self.get_prompt(template=template, 
@@ -89,8 +89,7 @@ class PlannerAssistant(BaseAssistant): #BaseModel):
 
 bot = PlannerAssistant()
 
-
-## Classify example
+### Classify example
 ## example categories
 classify_categories = """
 {Play with my friends, Attack with my sword, Find a weapon}
@@ -115,7 +114,8 @@ predicted_category = bot.classify_text(text=classify_query_text,
                                        categories=classify_categories)
 print("Predicted Category:", predicted_category)
 
-## Test decompose
+
+### Test decompose
 ## example primitive tasks
 decompose_primitive_tasks = """
 {"Go to", "Look at", "Turn On", "Turn Off", "Pick Up","Wait for"}
@@ -129,6 +129,7 @@ decompose_query_text = "Make Coffee"
 context = dict(primitive_tasks=decompose_primitive_tasks, 
                objects=decompose_objects)
 decomp = bot.decompose(task=decompose_query_text, 
-                                   primitive_tasks=decompose_primitive_tasks, 
-                                   objects=decompose_objects)
+                       primitive_tasks=decompose_primitive_tasks, 
+                       objects=decompose_objects)
 print("Decomposition:", decomp)
+

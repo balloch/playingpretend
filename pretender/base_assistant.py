@@ -43,6 +43,9 @@ class BaseAssistant(): #BaseModel):
         Initializes the assistant.
         :param llm: The LLM function to call. If None, will use simpleAIchat AIChat() with ChatGPT3.5.
         :param kwargs: Arguments to pass to the LLM model.
+        :param api_key: The API key to use for the LLM model. If None, will prompt the user for it.
+        :param model: The model to use for the LLM model. If None, will use gpt-3.5-turbo-0613.
+        :param system_prompt: The system prompt to use for the LLM model. If None, will use the default.
         """
         if llm is None or isinstance(llm,AIChat):
             if api_key is None:

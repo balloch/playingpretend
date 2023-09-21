@@ -1,6 +1,6 @@
 import argparse
-import llm_planner_assistant
-import creative_assistant
+import pretender.llm_planner_assistant as llm_planner_assistant
+import pretender.creative_assistant as creative_assistant
 from simpleaichat import AIChat
 
 '''make argparser'''
