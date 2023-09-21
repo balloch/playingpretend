@@ -61,6 +61,12 @@ class BaseAssistant(): #BaseModel):
             self.llm = llm()
 
     def get_prompt(self, template, query, context_dict=None):
+        """
+        Gets the prompt string from the template, 
+        and formats that template with a query and context dictionary of other values.
+        all templates use 'query' as the main question being asked the LLM
+        and 'examples' for the list of examples of the LLM template.
+        """
         if template[-3:] == 'txt':
             with open(template,'r') as f:
                 template_str = f.read()
@@ -79,6 +85,8 @@ class BaseAssistant(): #BaseModel):
         query separate to require it"""
         if context_dict is None:
             context_dict = {}
-        context_dict['query'] = query    
+        context_dict['query'] = query
+        if 'examples' not in context_dict:
+            context_dict['examples'] = None
         return ftext.format(**context_dict)
 

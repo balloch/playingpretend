@@ -42,6 +42,17 @@ How to determine when to decompose creative? based on perceived time:
 class PlannerAssistant(BaseAssistant): #BaseModel):
 
     def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
+        if system_prompt is None:
+            system_prompt='''
+                You are a Planning Assistant. 
+                You are going to be tasked with decomposing high level tasks into subtasks, 
+                by classifying tasks from a set of known categories of tasks,
+                coming up with logical preconditions and effects
+                and reasoning about whether tasks can logically follow each other.
+                Your purpose is to help the HTN Planner find a logically reasonable plan 
+                from Start to Goal, using known and objects, tasks, and actions as often as possible,
+                but being creative when it is not possible.
+                '''
         super().__init__(llm=llm, 
                          api_key=api_key, 
                          model=model, 
@@ -61,39 +72,32 @@ class PlannerAssistant(BaseAssistant): #BaseModel):
         predicted_category = self.llm(prompt=prompt)
         return predicted_category
 
-
-
-
-# categories = """
-# [Category 1]
-# **Name:** Play with my friends
-# **Preconditions:** After school
-# **Effects:** I will be happy
-
-# [Category 2]
-# **Name:** Attack with my sword
-# **Preconditions:** To slay a dragon
-# **Effects:** The dragon will die
-
-# [Category 3]
-# **Name:** Find a weapon
-# **Preconditions:** Once my sword is lost
-# **Effects:** I will be sad
-# """
+    def decompose(self, task, template_override=None, **context_dict):
+        if template_override is None:
+            template = 'decompose_template.txt'
+        else:
+            template = template_override
+        prompt = self.get_prompt(template=template, 
+                                 query=task, 
+                                 context_dict=context_dict)
+        # Your code here - interact with ChatGPT to decompose the text.
+        decomposed_text = self.llm(prompt=prompt)
+        return decomposed_text
 
 
 
 
+bot = PlannerAssistant()
+
+
+## Classify example
 ## example categories
-
-categories = """
+classify_categories = """
 {Play with my friends, Attack with my sword, Find a weapon}
 """
 
-
-
 ## example examples
-examples = """
+classify_examples = """
 [Query] 'After school I will '
 [Category] Play with my friends
 
@@ -104,12 +108,27 @@ examples = """
 [Category] Find a weapon
 """
 
-# Example usage
-bot = PlannerAssistant()
-query_text = "Now that I have eaten dinner I will"
-context = dict(examples=examples, categories=categories)
-predicted_category = bot.classify_text(text=query_text, 
-                                       examples=examples,
-                                       categories=categories)
+classify_query_text = "Now that I have eaten dinner I will"
+context = dict(examples=classify_examples, categories=classify_categories)
+predicted_category = bot.classify_text(text=classify_query_text, 
+                                       examples=classify_examples,
+                                       categories=classify_categories)
 print("Predicted Category:", predicted_category)
 
+## Test decompose
+## example primitive tasks
+decompose_primitive_tasks = """
+{"Go to", "Look at", "Turn On", "Turn Off", "Pick Up","Wait for"}
+"""
+
+decompose_objects = {'Cup', 'Bear',  'Sink', 'Coffee grounds', 'Fridge1', 'Coffee Machine'}
+
+## example examples
+decompose_examples = None
+decompose_query_text = "Make Coffee"
+context = dict(primitive_tasks=decompose_primitive_tasks, 
+               objects=decompose_objects)
+decomp = bot.decompose(task=decompose_query_text, 
+                                   primitive_tasks=decompose_primitive_tasks, 
+                                   objects=decompose_objects)
+print("Decomposition:", decomp)
