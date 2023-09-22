@@ -38,16 +38,18 @@ except OSError:
 
 
 class CreativeAssistant(BaseAssistant):
-    def __init__(self, theme, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
+    def __init__(self, theme, llm=None, api_key=None, model=None, system_prompt=None, save_messages=True):
         """
         Initializes the creative assistant.
         :param theme: The theme of the creative assistant.
         """
         if system_prompt is None:
-            system_prompt = """You are a world-renowned game master (GM) of tabletop role-playing games (RPGs).
+            system_prompt = """You are a world-renowned game designer games including role-playing games (RPGs).
                             Your job will be to come up with a fun, kid-friendly imaginary adventure.
 
                             Rules you MUST follow:
+                            - if asked about facts, you must be as concise as possible.
+                            - if asked to be descriptive, feel free to be verbose and creative.
                             - You must be creative and unique.
                             - All names you create must be kid-friendly and easy to pronounce.
                             - You must stay on theme.
@@ -85,60 +87,21 @@ class schema_player_character(BaseModel):
 
 class schema_tasks(BaseModel):
     name: str = Field(description="Action name")
-    preconditions: str = Field(description="Facts that must be true to take the action")
-    job: str = Field(description="Effects of taking the action")
+    preconditions: str = Field(description="List of facts that must be true to execute the action")
+    effect: str = Field(description="Effects of taking the action")
 
 
 class schema_write_ttrpg_setting(BaseModel):
     """Write a fun and innovative live-action role playing scenario"""
-
     description: str = Field(
-        description="Detailed description of the setting in the voice of the game master"
+        description="Detailed description of the setting"
     )
+    primitive_tasks: List[schema_tasks] = Field(description="The list of basic action types that players can do in the imaginary world.")
     quest: str = Field(description="The challenge that the players are trying to overcome.")
-    primitive_tasks: List[schema_tasks] = Field(description="The list of actions that players can do in the imaginary world. Must include both the basic actions of the world and the actions necessary to complete the quest")
     success_metric: str = Field(description="A concise, one-sentence explanation of how the players will know they have succeeded at their quest.")
     init: str = Field(description="Where does the adventure begin?")  ####### This should be determined by the real world
     name: str = Field(description="Name of the setting")
     pcs: List[schema_player_character] = Field(description="Player characters of the game")
-
-
-
-# ### World Creation example
-# theme = 'slaying a dragon in a cave'
-
-# ## example categories
-# classify_categories = """
-# {Play with my friends, Attack with my sword, Find a weapon}
-# """
-
-# ## example examples
-# classify_examples = """
-# [Query] 'After school I will '
-# [Category] Play with my friends
-
-# [Query] 'To slay a dragon I need to'
-# [Category] Attack with my sword
-
-# [Query] 'Once my sword is lost I must'
-# [Category] Find a weapon
-# """
-
-
-theme = 'slaying a dragon in a cave'
-bot = CreativeAssistant(theme=theme)
-world_structure = bot.create_world()
-
-# context = dict(examples=classify_examples, categories=classify_categories)
-# predicted_category = bot.classify_text(text=classify_query_text, 
-#                                        examples=classify_examples,
-#                                        categories=classify_categories)
-print("world_structure: ", world_structure)
-
-
-
-
-
 
 
 
@@ -191,9 +154,6 @@ json_data = {
     }
   ]
 }
-
-
-
 
 
 # Define a function to check if a verb is active
@@ -293,20 +253,61 @@ def extract_pos_json(json_dict, pos_type=None):
     return extract_pos_and_entities(json_text)
 
 
-nouns, verbs, proper_nouns = extract_pos_json(json_data)
 
-# Print the unique nouns, verbs, and proper nouns
-print("Unique Nouns:")
-for noun in nouns:
-    print(noun)
 
-print("\nUnique Verbs:")
-for verb in verbs:
-    print(verb)
 
-print("\nUnique Proper Nouns:")
-for proper_noun in proper_nouns:
-    print(proper_noun)
+# ### World Creation example
+# theme = 'slaying a dragon in a cave'
+
+# ## example categories
+# classify_categories = """
+# {Play with my friends, Attack with my sword, Find a weapon}
+# """
+
+# ## example examples
+# classify_examples = """
+# [Query] 'After school I will '
+# [Category] Play with my friends
+
+# [Query] 'To slay a dragon I need to'
+# [Category] Attack with my sword
+
+# [Query] 'Once my sword is lost I must'
+# [Category] Find a weapon
+# """
+
+
+theme = 'slaying a dragon in a cave'
+bot = CreativeAssistant(theme=theme)
+world_structure = bot.create_world()
+
+# context = dict(examples=classify_examples, categories=classify_categories)
+# predicted_category = bot.classify_text(text=classify_query_text, 
+#                                        examples=classify_examples,
+#                                        categories=classify_categories)
+
+print("world_structure: ",orjson.dumps(world_structure, option=orjson.OPT_INDENT_2).decode())
+print(input())
+
+
+# nouns, verbs, proper_nouns = extract_pos_json(json_data)
+
+# # Print the unique nouns, verbs, and proper nouns
+# print("Unique Nouns:")
+# for noun in nouns:
+#     print(noun)
+
+# print("\nUnique Verbs:")
+# for verb in verbs:
+#     print(verb)
+
+# print("\nUnique Proper Nouns:")
+# for proper_noun in proper_nouns:
+#     print(proper_noun)
+
+
+
+
 
 # Extract nouns and verbs from the combined text
 # nouns = extract_pos_json(json_data, "NOUN")

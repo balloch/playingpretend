@@ -6,10 +6,10 @@ from simpleaichat import AIChat
 import orjson
 from rich.console import Console
 from getpass import getpass
+import os
 
 from typing import List, Literal, Optional, Union
 from pydantic import BaseModel, Field
-
 
 """
 4 ai:
@@ -32,6 +32,9 @@ Need "Sensors" for preconditions and effects
 For not groundable: how do you know if it is decomposable or not?
 """
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
 class BaseAssistant(): #BaseModel):
 
     def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
@@ -45,7 +48,13 @@ class BaseAssistant(): #BaseModel):
         """
         if llm is None or isinstance(llm,AIChat):
             if api_key is None:
-                api_key = input("Please enter your API key: ")
+                file_path = os.path.join(current_dir, 'utils/api_key.txt')
+                if os.path.getsize(file_path) == 0:
+                    api_key = input("Please enter your API key: ")
+                else:
+                    with open(file_path, 'r') as f:
+                        fin = f.read()  
+                    api_key = fin
             if model is None:
                 model='gpt-3.5-turbo-0613'
             # if system_prompt is None:
