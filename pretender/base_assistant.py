@@ -30,10 +30,6 @@ Need "Sensors" for preconditions and effects
  - need to find correspondence between Sensor (like proximity sensor) and that can "sense" a precondition/effect like "near"
 
 For not groundable: how do you know if it is decomposable or not?
-
-How to determine when to decompose creative? based on perceived time:
-    - if LLM thinks it will take a long time (walk to cave, fight dragon), then decompose creatively
-    - if LLM thinks it will take a short time (enter cave, a spell that was casted), then by rule autoassociate-with "Say" e.g. astro says "I casted a magic missile"
 """
 
 class BaseAssistant(): #BaseModel):

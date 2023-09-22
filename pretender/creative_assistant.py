@@ -23,12 +23,18 @@ from pydantic import BaseModel, Field
 import spacy
 import json
 
-from base_assistant import BaseAssistant
+from pretender.base_assistant import BaseAssistant
 
 
 # Load the English NLP model from spaCy
-nlp = spacy.load("en_core_web_sm")
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    print("Downloading spaCy model...")
+    from spacy.cli import download
 
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
 
 class CreativeAssistant(BaseAssistant):
@@ -61,6 +67,10 @@ class CreativeAssistant(BaseAssistant):
         Creates the world.
         :return: The world description.
         """
+        self.response_structured = self.llm(self.theme, output_schema=schema_write_ttrpg_setting)
+        self.nouns, self.verbs, self.proper_nouns = extract_pos_json(self.response_structured)
+        return self.response_structured
+
 
 
 ## Schema Classes
@@ -93,7 +103,6 @@ class schema_write_ttrpg_setting(BaseModel):
     pcs: List[schema_player_character] = Field(description="Player characters of the game")
 
 
-# bot = CreativeAssistant()
 
 # ### World Creation example
 # theme = 'slaying a dragon in a cave'
@@ -115,34 +124,33 @@ class schema_write_ttrpg_setting(BaseModel):
 # [Category] Find a weapon
 # """
 
-# classify_query_text = "Now that I have eaten dinner I will"
+
+theme = 'slaying a dragon in a cave'
+bot = CreativeAssistant(theme=theme)
+world_structure = bot.create_world()
+
 # context = dict(examples=classify_examples, categories=classify_categories)
 # predicted_category = bot.classify_text(text=classify_query_text, 
 #                                        examples=classify_examples,
 #                                        categories=classify_categories)
-# print("Predicted Category:", predicted_category)
+print("world_structure: ", world_structure)
 
 
-# Define functions to extract unique parts of speech from text
-def extract_pos(text, pos_type):
-    doc = nlp(text)
-    pos_set = set()
 
-    for token in doc:
-        if token.pos_ == pos_type:
-            pos_set.add(token.text)
 
-    return pos_set
 
-def extract_pos_json(json_dict, pos_type):
-    all_text = " ".join([str(value) for value in json_dict.values() if isinstance(value, str)])
-    return extract_pos(all_text, pos_type)
+
+
+
+
+
+
+
 
 
 
 # Your JSON data
-json_data = '''
-{
+json_data = {
   "description": "Welcome to the treacherous world of Draconia, a land filled with danger and adventure. In the heart of the kingdom lies a massive cave, rumored to be the lair of a powerful dragon. The dragon, known as Drakon the Terrible, has been terrorizing the countryside, burning villages and hoarding treasure. Brave adventurers from all corners of the realm have gathered to slay the dragon and bring peace back to the land. The cave is a labyrinth of tunnels and chambers, filled with deadly traps and fierce monsters. Only the strongest and most cunning heroes have a chance of surviving the treacherous journey and emerging victorious. Do you have what it takes to face the dragon and save Draconia?",
   "quest": "Slay the dragon Drakon the Terrible and bring peace back to the kingdom of Draconia.",
   "success_metric": "The players will know they have succeeded when they have defeated Drakon the Terrible and the land is no longer plagued by his terror.",
@@ -183,16 +191,111 @@ json_data = '''
     }
   ]
 }
-'''
 
-# # Combine all the text fields into a single string
-# all_text = " ".join([str(value) for value in json_data.values() if isinstance(value, str)])
 
-# Extract nouns and verbs from the combined text
-nouns = extract_pos_json(json_data, "NOUN")
-verbs = extract_pos_json(json_data, "VERB")
 
-# Print the unique nouns and verbs
+
+
+# Define a function to check if a verb is active
+def is_active_verb(token):
+    return (
+        token.pos_ == "VERB" and
+        "pass" not in [child.dep_ for child in token.children]
+    )
+
+# Define functions to extract unique parts of speech from text
+def extract_basic_pos(text, pos_type):
+    doc = nlp(text)
+    pos_set = set()
+
+    for token in doc:
+        if token.pos_ == pos_type:
+            pos_set.add(token.text)
+
+    return pos_set
+
+# def extract_pos_and_entities(text):
+#     doc = nlp(text)
+#     nouns = set()
+#     verbs = set()
+#     proper_nouns = set()
+#     multi_token_entities = set()
+
+#     for token in doc:
+#         if token.pos_ == "NOUN" and token.text not in multi_token_entities:
+#             nouns.add(token.text)
+#         elif is_active_verb(token) and token.text not in multi_token_entities:
+#             verbs.add(token.text)
+#         if token.ent_type_ == "PERSON" or token.ent_type_ == "ORG" or token.ent_type_ == "GPE":
+#             proper_noun = token.text
+#             # Check if the current token is part of a multi-token entity
+#             while token.i + 1 < len(doc) and doc[token.i + 1].ent_iob_ == 'I':
+#                 token = doc[token.i + 1]
+#                 proper_noun += " " + token.text
+#             proper_nouns.add(proper_noun)
+#             multi_token_entities.update(proper_noun.split())  # Exclude individual words from NOUN and VERB
+
+#     return nouns, verbs, proper_nouns
+
+# Define a recursive function to extract unique nouns, active verbs, and named entities from text
+def extract_pos_and_entities(text):
+    doc = nlp(text)
+    nouns = set()
+    verbs = set()
+    proper_nouns = set()
+
+    for token in doc:
+        if token.pos_ == "NOUN":
+            nouns.add(token.text)
+        elif is_active_verb(token):
+            verbs.add(token.text)
+        if token.ent_type_ in {"PERSON", "ORG", "GPE"}:
+            proper_noun = token.text
+            # Check if the current token is part of a multi-token entity
+            while token.i + 1 < len(doc) and doc[token.i + 1].ent_iob_ == 'I':
+                token = doc[token.i + 1]
+                proper_noun += " " + token.text
+            proper_nouns.add(proper_noun)
+
+    for child in doc:
+        # if child.text.lower() == "description":
+        #     continue  # Skip the "description" field to avoid processing it again
+
+        if isinstance(text, str):
+            try:
+                child_json = json.loads(text)
+                for key, value in child_json.items():
+                    if isinstance(value, str):
+                        nested_nouns, nested_verbs, nested_proper_nouns = extract_pos_and_entities(value)
+                        nouns.update(nested_nouns)
+                        verbs.update(nested_verbs)
+                        proper_nouns.update(nested_proper_nouns)
+                    elif isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, str):
+                                nested_nouns, nested_verbs, nested_proper_nouns = extract_pos_and_entities(item)
+                                nouns.update(nested_nouns)
+                                verbs.update(nested_verbs)
+                                proper_nouns.update(nested_proper_nouns)
+            except json.JSONDecodeError:
+                pass
+
+    return nouns, verbs, proper_nouns
+
+
+def extract_pos_json(json_dict, pos_type=None):
+    """
+    :return: the nouns, verbs, and proper nouns in the JSON data
+    """
+    json_text = json.dumps(json_dict, ensure_ascii=False)
+    # all_text = " ".join([str(value) for value in json_dict.values() if isinstance(value, str)])
+    # return extract_pos_and_entities(all_text, pos_type)
+    return extract_pos_and_entities(json_text)
+
+
+nouns, verbs, proper_nouns = extract_pos_json(json_data)
+
+# Print the unique nouns, verbs, and proper nouns
 print("Unique Nouns:")
 for noun in nouns:
     print(noun)
@@ -200,3 +303,20 @@ for noun in nouns:
 print("\nUnique Verbs:")
 for verb in verbs:
     print(verb)
+
+print("\nUnique Proper Nouns:")
+for proper_noun in proper_nouns:
+    print(proper_noun)
+
+# Extract nouns and verbs from the combined text
+# nouns = extract_pos_json(json_data, "NOUN")
+# verbs = extract_pos_json(json_data, "VERB")
+
+# # Print the unique nouns and verbs
+# print("Unique Nouns:")
+# for noun in nouns:
+#     print(noun)
+
+# print("\nUnique Verbs:")
+# for verb in verbs:
+#     print(verb)
