@@ -190,6 +190,31 @@ def method_task_y(_):
 if __name__ == "__main__":
     planner = HTNPlanner()
 
+    # Task Decomposition:
+
+    task_decomp = '''1. Go to the Coffee Machine.
+    2. Turn on the Coffee Machine.
+    3. Wait for the Coffee Machine to heat up.
+    4. Pick up the Cup.
+    5. Go to the Fridge1.
+    6. Open the Fridge1.
+    7. Pick up the Coffee grounds from Fridge1.
+    8. Close the Fridge1.
+    9. Go to the Sink.
+    10. Fill the Cup with water from the Sink.
+    11. Close the Sink.
+    12. Go to the Coffee Machine.
+    13. Put the Coffee grounds into the Coffee Machine.
+    14. Put the Cup under the Coffee Machine.
+    15. Turn on the Coffee Machine.
+    16. Wait for the Coffee Machine to brew the coffee.
+    17. Turn off the Coffee Machine.
+    18. Pick up the Cup with brewed coffee.
+    19. Enjoy your freshly brewed coffee.'''.split('\n')
+
+    task_decomp = [s.lstrip('0123456789 .') for s in task_decomp]
+
+
     planner.add_task("primitive_task_a", primitive_task_a)
     planner.add_task("primitive_task_b", primitive_task_b)
 

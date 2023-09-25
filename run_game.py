@@ -41,18 +41,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = "gpt-3.5-turbo-0613"
     base_ai = AIChat()
-    planner_ai = llm_planner_assistant(base_ai, 
-                                       args.api_key, 
-                                       args.model, 
-                                       args.system_prompt, 
-                                       args.save_messages)
-    creative_ai = creative_assistant(base_ai, 
-                                        args.api_key, 
-                                        args.model, 
-                                        args.system_prompt, 
-                                        args.save_messages)
+    planner_ai = llm_planner_assistant(base_ai)
+    creative_ai = creative_assistant(base_ai)
 
-        # system=system_prompt, model=model, save_messages=False, api_key=api_key)
+    
+        # How Ambient works:
         # Ask for objects first, then ask for story
         # How to extract actions from story? 
         #   "using the list of objects, find the relevant verbs/actions"
