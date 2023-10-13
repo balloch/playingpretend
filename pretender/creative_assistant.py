@@ -14,99 +14,20 @@ remembering the creative facts it invents like locations, objects, actions, char
 quest, and story, and using these facts instead of creating new ones whenever possible.
 '''
 
-from simpleaichat import AIChat
 import orjson
-from rich.console import Console    
-from getpass import getpass
-from typing import List, Literal, Optional, Union
-from pydantic import BaseModel, Field
 import spacy
 import json
 
-from pretender.base_assistant import BaseAssistant
-
-
-# Load the English NLP model from spaCy
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    print("Downloading spaCy model...")
-    from spacy.cli import download
-
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
-
-
-class CreativeAssistant(BaseAssistant):
-    def __init__(self, theme, llm=None, api_key=None, model=None, system_prompt=None, save_messages=True):
-        """
-        Initializes the creative assistant.
-        :param theme: The theme of the creative assistant.
-        """
-        if system_prompt is None:
-            system_prompt = """You are a world-renowned game designer games including role-playing games (RPGs).
-                            Your job will be to come up with a fun, kid-friendly imaginary adventure.
-
-                            Rules you MUST follow:
-                            - if asked about facts, you must be as concise as possible.
-                            - if asked to be descriptive, feel free to be verbose and creative.
-                            - You must be creative and unique.
-                            - All names you create must be kid-friendly and easy to pronounce.
-                            - You must stay on theme.
-                            - remembering the creative facts it invents like locations, objects,
-                              actions, tasks, characters, quest, and story, and using these facts instead
-                              of creating new ones whenever possible.
-                            """
-        super().__init__(llm=llm, 
-                         api_key=api_key, 
-                         model=model, 
-                         system_prompt=system_prompt, 
-                         save_messages=save_messages)
-        self.theme = theme
-
-    def create_world(self):
-        """
-        Creates the world.
-        :return: The world description.
-        """
-        self.response_structured = self.llm(self.theme, output_schema=schema_write_ttrpg_setting)
-        self.nouns, self.verbs, self.proper_nouns = extract_pos_json(self.response_structured)
-        return self.response_structured
-
-
-
-## Schema Classes
-class schema_player_character(BaseModel):
-    name: str = Field(description="Character name")
-    race: str = Field(description="Character race")
-    job: str = Field(description="Character class/job")
-    story: str = Field(description="Three-sentence character history")
-    feats: List[str] = Field(description="Character feats")
-    equipment: List[str] = Field(description="Character equipment")
-
-
-class schema_tasks(BaseModel):
-    name: str = Field(description="Action name")
-    preconditions: str = Field(description="List of facts that must be true to execute the action")
-    effect: str = Field(description="Effects of taking the action")
-
-
-class schema_write_ttrpg_setting(BaseModel):
-    """Write a fun and innovative live-action role playing scenario"""
-    description: str = Field(
-        description="Detailed description of the setting"
-    )
-    primitive_tasks: List[schema_tasks] = Field(description="The list of basic action types that players can do in the imaginary world.")
-    quest: str = Field(description="The challenge that the players are trying to overcome.")
-    success_metric: str = Field(description="A concise, one-sentence explanation of how the players will know they have succeeded at their quest.")
-    init: str = Field(description="Where does the adventure begin?")  ####### This should be determined by the real world
-    name: str = Field(description="Name of the setting")
-    pcs: List[schema_player_character] = Field(description="Player characters of the game")
+from pretender.assistants import CreativeAssistant
 
 
 
 
 
+
+###########
+### Test Creative Assistant
+###########
 
 
 

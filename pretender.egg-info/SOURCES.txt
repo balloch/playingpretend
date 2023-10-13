@@ -2,11 +2,10 @@ LICENSE
 README.md
 setup.py
 pretender/__init__.py
-pretender/base_assistant.py
+pretender/assistants.py
 pretender/creative_assistant.py
 pretender/htn.py
 pretender/llm_planner_assistant.py
-pretender/utils.py
 pretender.egg-info/PKG-INFO
 pretender.egg-info/SOURCES.txt
 pretender.egg-info/dependency_links.txt

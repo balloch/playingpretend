@@ -1,7 +1,21 @@
 import argparse
-import pretender.llm_planner_assistant as llm_planner_assistant
-import pretender.creative_assistant as creative_assistant
+import spacy
+from pretender.assistants import PlannerAssistant, CreativeAssistant
 from simpleaichat import AIChat
+import os
+
+
+# Load the English NLP model from spaCy
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    print("Downloading spaCy model...")
+    from spacy.cli import download
+
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
+
+
 
 '''make argparser'''
 parser = argparse.ArgumentParser(description='Run the game')
@@ -9,6 +23,7 @@ parser.add_argument('--api_key', type=str, default=None, help='OpenAI API key')
 parser.add_argument('--model', type=str, default='gpt-3.5-turbo-0613', help='LLM Model')
 parser.add_argument('--system_prompt', type=str, default='You are a helpful story planner', help='System prompt')
 parser.add_argument('--save_messages', type=bool, default=False, help='Save messages')
+
 
 
 """
@@ -39,10 +54,16 @@ How to determine when to decompose creative? based on perceived time:
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    if args.api_key is None:
+        try:
+            args.api_key = os.environ["OPENAI_API_KEY"]
+        except:
+            raise ValueError("Must provide OpenAI API key")
     model = "gpt-3.5-turbo-0613"
     base_ai = AIChat()
-    planner_ai = llm_planner_assistant(base_ai)
-    creative_ai = creative_assistant(base_ai)
+    qa_ai = AIChat(system=system_prompt, model='gpt-3.5-turbo-0613', save_messages=False, api_key=api_key, params = {"temperature": 0.0})
+    planner_ai = PlannerAssistant(base_ai)
+    creative_ai = CreativeAssistant(base_ai)
 
     
         # How Ambient works:
