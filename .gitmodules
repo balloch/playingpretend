@@ -1,0 +1,3 @@
+[submodule "alfworld"]
+	path = alfworld
+	url = git@github.com:alfworld/alfworld.git
