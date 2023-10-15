@@ -4,7 +4,7 @@ It will be interfacing with the ChatGPT model using simpleaichat to do these fun
 The purpose of this assistant is to help the HTN Planner find a logically reasonable plan from start to goal, 
 using known and primitive actions as often as possible.
 '''
-from pretender.assistants import PlannerAssistant
+from pretender.assistants import LogicAssistant
 import orjson
 
 
@@ -13,7 +13,7 @@ import orjson
 ### Test Planner Assistant
 #########
 
-bot = PlannerAssistant()
+bot = LogicAssistant()
 
 ### Classify example
 ## example categories

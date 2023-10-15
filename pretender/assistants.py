@@ -2,15 +2,14 @@
 which planning assistant and creative assistant inherit from.
 '''
 
-from pretender.creative_assistant import extract_pos_json, schema_write_ttrpg_setting
 from simpleaichat import AIChat
-import orjson
-from rich.console import Console
-from getpass import getpass
 import os
 
-from typing import List, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from pretender.utils.schema_tools import extract_pos_json
+from pretender.utils.schemas import schema_write_ttrpg_setting
+
+
+
 
 """
 2 ai:
@@ -70,7 +69,14 @@ class BaseAssistant(): #BaseModel):
                 system_prompt=system_prompt,
                 save_messages=save_messages)
         else:
-            self.llm = llm()
+            ## Currently only works for AIChat
+            self.llm = llm(
+                model=model,
+                console=False,
+                api_key=api_key,
+                system_prompt=system_prompt,
+                save_messages=save_messages
+            )
 
     def get_prompt(self, template, query, context_dict=None):
         """
@@ -141,7 +147,7 @@ class CreativeAssistant(BaseAssistant):
 
 
 
-class PlannerAssistant(BaseAssistant): #BaseModel):
+class LogicAssistant(BaseAssistant): #BaseModel):
 
     def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
         if system_prompt is None:

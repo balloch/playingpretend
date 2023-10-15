@@ -1,6 +1,6 @@
 import argparse
 import spacy
-from pretender.assistants import PlannerAssistant, CreativeAssistant
+from pretender.assistants import LogicAssistant, CreativeAssistant
 from simpleaichat import AIChat
 import os
 
@@ -60,10 +60,15 @@ if __name__ == "__main__":
         except:
             raise ValueError("Must provide OpenAI API key")
     model = "gpt-3.5-turbo-0613"
-    base_ai = AIChat()
-    qa_ai = AIChat(system=system_prompt, model='gpt-3.5-turbo-0613', save_messages=False, api_key=api_key, params = {"temperature": 0.0})
-    planner_ai = PlannerAssistant(base_ai)
-    creative_ai = CreativeAssistant(base_ai)
+    # base_ai = AIChat()
+    qa_ai = LogicAssistant(model='gpt-3.5-turbo-0613',
+                           save_messages=False,
+                           api_key=api_key, 
+                           params = {"temperature": 0.0})
+    creative_ai = CreativeAssistant(model='gpt-3.5-turbo-0613',
+                           save_messages=False,
+                           api_key=api_key, 
+                           params = {"temperature": 0.0})
 
     
         # How Ambient works:
