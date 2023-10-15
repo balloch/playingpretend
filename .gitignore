@@ -402,3 +402,9 @@ FodyWeavers.xsd
 *.sln.iml
 api_key
 api_key
+
+# Intellij
+.idea/
+
+# alfworld-download-data
+alfworld-data
