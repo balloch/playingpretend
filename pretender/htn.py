@@ -4,6 +4,38 @@ from pydantic import BaseModel, Field
 import heapq
 
 
+class Object: #(BaseModel)
+    object_coll = {}
+    def __init__(self, name, loc):
+        self.name = name
+        self.init_loc = loc
+        iter = self._put(loc)
+        self.init_iter = iter
+
+    def _put(self, new_loc):
+        if (self.name, new_loc) in self.object_coll:
+            self.object_coll[(self.name,new_loc)].append(self)
+        else:
+            self.object_coll[(self.name,new_loc)]=[self]
+        self.loc = new_loc
+        len(self.object_coll[(self.name,new_loc)])
+        self.iter = iter
+        return iter
+
+    def move(self, new_loc):
+        self.object_coll[(self.name,self.loc)].remove[self.iter]
+        self._put(new_loc)
+
+    def __hash__(self):
+        return hash(frozenset((self.name, self.init_loc, self.init_iter)))
+
+    def __eq__(self, other):
+        return isinstance(other, Object) and self.name == other.name and self.init_loc == other.loc and self.init_iter == other.init_iter
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
 class State: #(BaseModel)
     """
     A state is a set of predicates that are true in the world.
@@ -56,13 +88,17 @@ class Task: #(BaseModel)
     When the task is called for execution, if it is primitive, it executes the primitive function P.
     If not, it iteratively calls the functions of its subtasks.
     """
-    def __init__(self, name, terms, effects, primitive_fn=None, subtasks=[]):
+    def __init__(self, name, expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=None, root=False):
         # super().__init__(**kwargs)
         self.name = name
-        self.terms = terms
-        self.effects = effects
+        # self.terms = terms  ## preconditions
+        self.expected_start_location = expected_start_location
+        self.expected_visit_location = expected_visit_location
+        self.objects_required = objects_required
         self.primitive_fn = primitive_fn
         self.subtasks = subtasks
+        self.effects = effects
+        self.root = root
 
     def add_subtask(self, subtask):
         self.subtasks.append(subtask)
@@ -84,6 +120,15 @@ class Task: #(BaseModel)
             for subtask in self.subtasks:
                 e.extend(subtask(state, **kwds))
         return e
+
+    def __hash__(self):
+        return hash(frozenset((self.name, self.primitive_fn)))
+
+    def __eq__(self, other):
+        return isinstance(other, Task) and self.name == other.name and self.primitive_fn == other.primitive_fn
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __repr__(self):
         return f"Task: {self.name}"

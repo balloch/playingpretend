@@ -2,12 +2,14 @@
 which planning assistant and creative assistant inherit from.
 '''
 
+from typing import Any, Union, Dict, List   
+from uuid import UUID
 from simpleaichat import AIChat
 import os
 
 from pretender.utils.schema_tools import extract_pos_json
 from pretender.utils.schemas import schema_write_ttrpg_setting
-
+from getpass import getpass
 
 
 
@@ -40,7 +42,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 class BaseAssistant(): #BaseModel):
 
-    def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
+    def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False, model_params=None):
         """
         Initializes the assistant.
         :param llm: The LLM function to call. If None, will use simpleAIchat AIChat() with ChatGPT3.5.
@@ -49,33 +51,41 @@ class BaseAssistant(): #BaseModel):
         :param model: The model to use for the LLM model. If None, will use gpt-3.5-turbo-0613.
         :param system_prompt: The system prompt to use for the LLM model. If None, will use the default.
         """
+        if model is None:
+            model='gpt-3.5-turbo-0613'
+        self.model = model
+        if model_params is None:
+            model_params = {}  
+        self.model_params = model_params
+
         if llm is None or isinstance(llm,AIChat):
             if api_key is None:
                 file_path = os.path.join(current_dir, 'utils/api_key.txt')
                 if os.path.getsize(file_path) == 0:
-                    api_key = input("Please enter your API key: ")
+                    api_key = getpass("Please enter your API key: ")
                 else:
                     with open(file_path, 'r') as f:
                         fin = f.read()  
                     api_key = fin
-            if model is None:
-                model='gpt-3.5-turbo-0613'
-            # if system_prompt is None:
-            #     system_prompt=='You are a helpful story planner'
+            if system_prompt is None:
+                system_prompt=='You are a helpful assistant.'
             self.llm=AIChat(
-                model=model,
+                model=self.model,
                 console=False,
                 api_key=api_key,
                 system_prompt=system_prompt,
-                save_messages=save_messages)
+                save_messages=save_messages,
+                params=self.model_params
+                )
         else:
             ## Currently only works for AIChat
             self.llm = llm(
-                model=model,
+                model=self.model,
                 console=False,
                 api_key=api_key,
                 system_prompt=system_prompt,
-                save_messages=save_messages
+                save_messages=save_messages,
+                params=self.model_params
             )
 
     def get_prompt(self, template, query, context_dict=None):
@@ -106,11 +116,30 @@ class BaseAssistant(): #BaseModel):
         if 'examples' not in context_dict:
             context_dict['examples'] = None
         return ftext.format(**context_dict)
+    
+    def __call__(
+        self,
+        prompt: Union[str, Any],
+        id: Union[str, UUID] = None,
+        system: str = None,
+        params: Dict[str, Any] = None,
+        input_schema: Any = None,
+        output_schema: Any = None) -> str:
+        ## TODO balloch: this should inheret its model from the LLM
+
+        return self.llm(
+            prompt=prompt,
+            id=id,
+            system=system,
+            params=params,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            )
 
 
 
 class CreativeAssistant(BaseAssistant):
-    def __init__(self, theme, llm=None, api_key=None, model=None, system_prompt=None, save_messages=True):
+    def __init__(self, theme, llm=None, api_key=None, model=None, system_prompt=None, save_messages=True, model_params=None):
         """
         Initializes the creative assistant.
         :param theme: The theme of the creative assistant.
@@ -133,7 +162,8 @@ class CreativeAssistant(BaseAssistant):
                          api_key=api_key,
                          model=model,
                          system_prompt=system_prompt,
-                         save_messages=save_messages)
+                         save_messages=save_messages, 
+                         model_params=model_params)
         self.theme = theme
 
     def create_world(self):
@@ -149,7 +179,7 @@ class CreativeAssistant(BaseAssistant):
 
 class LogicAssistant(BaseAssistant): #BaseModel):
 
-    def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False):
+    def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False, model_params=None):
         if system_prompt is None:
             system_prompt='''
                 You are a Planning Assistant. 
@@ -165,7 +195,8 @@ class LogicAssistant(BaseAssistant): #BaseModel):
                          api_key=api_key,
                          model=model,
                          system_prompt=system_prompt,
-                         save_messages=save_messages)
+                         save_messages=save_messages, 
+                         model_params=model_params)
 
     def classify_text(self, text, template_override=None, **context_dict):
         if template_override is None:

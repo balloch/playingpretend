@@ -1,8 +1,14 @@
 import argparse
+import inspect
 import spacy
-from pretender.assistants import LogicAssistant, CreativeAssistant
 from simpleaichat import AIChat
 import os
+from getpass import getpass
+
+from pretender.assistants import LogicAssistant, CreativeAssistant
+from pretender.htn import Task, Object
+from pretender.utils.llm_utils import tidy_llm_list_string
+from pretender.test.dummy_api import RobotAPI, ImaginaryAgent, real_object_locations
 
 
 # Load the English NLP model from spaCy
@@ -16,13 +22,17 @@ except OSError:
     nlp = spacy.load("en_core_web_sm")
 
 
+## Path to current directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 '''make argparser'''
 parser = argparse.ArgumentParser(description='Run the game')
 parser.add_argument('--api_key', type=str, default=None, help='OpenAI API key')
 parser.add_argument('--model', type=str, default='gpt-3.5-turbo-0613', help='LLM Model')
 parser.add_argument('--system_prompt', type=str, default='You are a helpful story planner', help='System prompt')
-parser.add_argument('--save_messages', type=bool, default=False, help='Save messages')
+parser.add_argument('--save_messages', default=False, action='store_true', help='Save messages')
+parser.add_argument('--input_allowed', default=False, action='store_true', help='whether there can be console input')
 
 
 
@@ -54,23 +64,119 @@ How to determine when to decompose creative? based on perceived time:
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    ## ensure api key
     if args.api_key is None:
-        try:
+        api_file_path = os.path.join(current_dir, 'utils/api_key.txt')
+        if "OPENAI_API_KEY" in os.environ and len(os.environ["OPENAI_API_KEY"]) > 0:
             args.api_key = os.environ["OPENAI_API_KEY"]
-        except:
+        elif os.path.exists(api_file_path) and os.path.getsize(api_file_path) > 0:
+            with open(api_file_path, 'r') as f:
+                args.api_key = f.read()  
+        elif args.input_allowed is True:  # TODO balloch: do better here
+            args.api_key = getpass("Please enter your API key: ")
+        else:
             raise ValueError("Must provide OpenAI API key")
-    model = "gpt-3.5-turbo-0613"
-    # base_ai = AIChat()
+
+    system_prompt = """You are a helpful assistant. You keep your answers brief. 
+    When asked for steps or a list you answer with an enumerated list. 
+    Only give the answer to the question, do not expound on your answers."""
+
+    logic_system_prompt = """This is a logical, common sense, question answering task.
+    Your job is to answer questions as simply and correctly as possible.
+    When asked for steps or a list, please answer in an enumerated list.
+    Only give the answer to the question, do not expound on your answers."""
+
+    creative_system_prompt = """You are a children's story teller and game designer. Be creative but concise."""
+
+    theme = 'Find Buried Pirate Treasure'
+
     qa_ai = LogicAssistant(model='gpt-3.5-turbo-0613',
                            save_messages=False,
-                           api_key=api_key, 
-                           params = {"temperature": 0.0})
-    creative_ai = CreativeAssistant(model='gpt-3.5-turbo-0613',
-                           save_messages=False,
-                           api_key=api_key, 
-                           params = {"temperature": 0.0})
+                           api_key=args.api_key, 
+                           model_params = {"temperature": 0.0})
+    creative_ai = CreativeAssistant(
+        theme=theme,
+        model='gpt-3.5-turbo-0613',
+        save_messages=True,
+        api_key=args.api_key, 
+        model_params = {"temperature": 0.1})
 
-    
+    ###########
+    ### Initialize story
+    ###########
+
+    story = creative_ai(f"Write a short story featuring two friends, Astro and Playmate, about {theme} that a 5 year old would understand and enjoy")
+    print('story, ', story)
+
+    gen_loc = qa_ai(f"Given the story {story}, where does the story take place? If you can't tell from the story, just say 'Location Name: The story world' \n Example: 'Location Name: <example name>' ")
+    gen_loc = gen_loc.replace('Location Name:','').strip()
+    print('##gen_loc?, ', gen_loc)
+
+    # story_init_loc = qa_ai(f"Given the story '{story}' \n that takes place in {gen_loc}, what specific location within {gen_loc} where the characters most likely begin the story, before they {theme}. Only answer with the Location Name. \n Example: 'Location Name: <example_location_inside_{gen_loc}>'")
+    story_init_loc = creative_ai(f"Given the story which takes place in {gen_loc}, what specific location within {gen_loc} are the characters most likely begin the story, before they {theme}? Only answer with the Location Name. \n Example: 'Location Name: <example_location_inside_{gen_loc}>'")
+    # story_init_loc = story_init_loc.split('\n')
+    story_init_loc = story_init_loc.replace('Location Name:','').strip()
+    print('##story init loc, ', story_init_loc)
+
+
+    story_points = qa_ai(f"Given the story {story}, only using sentences with one clause list the five most important actions the characters made in the story to {theme}.") # Use proper nouns instead of pronouns wherever possible")
+    story_points_list = tidy_llm_list_string(story_points)
+    print('##story_points, ', story_points_list)
+
+    creative_story_points = creative_ai(f"Given the story {story}, only using sentences with one clause list the five most important actions the characters made in the story to {theme}.") # Use proper nouns instead of pronouns wherever possible")
+    creative_story_points_list = tidy_llm_list_string(creative_story_points)
+    print('##creative_story_points_list, ', creative_story_points_list)
+
+    ###########
+    ### Initialize planning info
+    ###########
+    init_robot_loc = 0
+    init_imaginary_loc = 'treehouse'
+    robot_api = RobotAPI(init_robot_loc)
+    im_agent = ImaginaryAgent(init_imaginary_loc)
+    ## Start with a list of lists, then turn into a
+
+    real_tasks = []
+    imaginary_tasks = []
+
+    ## Initialize API functions as primitive tasks
+    for primitive in inspect.getmembers(RobotAPI, predicate=inspect.isfunction):
+        primitive_str = str(primitive[0])
+        if primitive_str[0] != '_':
+            ## Autoground:
+
+            real = Task(
+                name = primitive_str,
+                primitive_fn = primitive[1],
+                )
+            # imaginary_fn = lambda
+            imaginary = Task(
+                name = primitive_str,
+                primitive_fn = getattr(im_agent, primitive_str),
+                )
+
+            real_tasks.append(real)
+            imaginary_tasks.append(imaginary)
+
+    print(real_tasks)
+    print(imaginary_tasks)
+
+    for obj, loc in real_object_locations.items():
+        name = obj.rstrip('1234567890_').replace('_',' ')
+        print(name)
+        Object(name,loc)
+
+    print(Object.object_coll)
+    story_tree = Task(
+        name=theme,
+        expected_start_location=story_init_loc,
+        expected_visit_location=[],
+        objects_required= None,
+        primitive_fn = None,
+        subtasks=[],
+        root=True,
+    )
+
         # How Ambient works:
         # Ask for objects first, then ask for story
         # How to extract actions from story? 
@@ -79,11 +185,3 @@ if __name__ == "__main__":
         #   Likert scale on sequence of actions 
         #   Individual action suggestions given a scenario
 
-    # Example usage
-    bot = llm_planner_assistant()
-    query_text = "Now that I have eaten dinner I will"
-    context = dict(examples=examples, categories=categories)
-    predicted_category = bot.classify_text(text=query_text, 
-                                        examples=examples,
-                                        categories=categories)
-    print("Predicted Category:", predicted_category)
