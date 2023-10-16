@@ -8,7 +8,7 @@ from simpleaichat import AIChat
 import os
 
 from pretender.utils.schema_tools import extract_pos_json
-from pretender.utils.schemas import schema_write_ttrpg_setting
+from pretender.templates.schemas import schema_write_ttrpg_setting
 from getpass import getpass
 
 

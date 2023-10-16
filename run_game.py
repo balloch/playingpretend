@@ -8,6 +8,7 @@ from getpass import getpass
 from pretender.assistants import LogicAssistant, CreativeAssistant
 from pretender.htn import Task, Object
 from pretender.utils.llm_utils import tidy_llm_list_string
+from pretender.utils.viz_utils import visualize_task_tree
 from pretender.test.dummy_api import RobotAPI, ImaginaryAgent, real_object_locations
 
 
@@ -131,9 +132,8 @@ if __name__ == "__main__":
     ### Initialize planning info
     ###########
     init_robot_loc = 0
-    init_imaginary_loc = 'treehouse'
     robot_api = RobotAPI(init_robot_loc)
-    im_agent = ImaginaryAgent(init_imaginary_loc)
+    im_agent = ImaginaryAgent(story_init_loc)
     ## Start with a list of lists, then turn into a
 
     real_tasks = []
@@ -176,6 +176,140 @@ if __name__ == "__main__":
         subtasks=[],
         root=True,
     )
+
+    ## TODO balloch: automate this 
+    characters = ['Astro', 'Playmate']
+    lc = len(characters)
+    if lc > 1:
+        the_characters = 'and ' + characters[-1]
+        if lc > 2:
+            the_characters = ', ' + the_characters
+        for cha in characters[:lc-1]:
+            the_characters += cha
+
+    ############
+    ### Decompose story points
+    ############
+    story_point_list_present = [qa_ai(f"Convert the following sentence to present tense: {point}") for point in enumerate(story_points_list)]
+    print('##story_point_list_present, ', story_point_list_present)
+
+    state = {'time':0, 'loc':story_init_loc,} # 'loc_type':story_init_loc[1],}
+    print('##state, ', state)
+
+    init_loc = story_init_loc
+
+    ############
+    ### Main Planner Loop
+    ############
+    for idx, point in enumerate(story_point_list_present):
+        current_task = Task(
+            name= point,
+            expected_start_location= init_loc,
+        )
+        # Check primitives i.e. if they have to possess something to do this story point
+        #############
+        ##### Primitive Decomps:
+        #############
+        print('##point, ', point)
+
+        ### Locations
+        move_tf = qa_ai(f"True or False: it is possible the {the_characters} can successfully '{point}' while staying at {state['loc']}.") # \n context story: \n {story} \n .")
+        print('##Unecessary to Move?, ', move_tf)
+        if move_tf[0:4] == 'True':
+            move_tf = True
+        elif move_tf[0:5] == 'False':
+            move_tf = False
+        else:
+            raise TypeError
+
+        if move_tf is False:
+            ## TODO balloch: Add a location precondition and a move subtask
+            ## TODO balloch: the below should be a function than any AI can use, where the parameters passed are (1) prompt, 'while' criteria function and variables, attempt limit, and 'validation function'
+            new_locs_list = []
+            attempt = 0
+            creative_ai.llm.default_session.messages.append('temp')   # TODO balloch: this is a hack make more general
+            while not len(new_locs_list):
+                del creative_ai.llm.default_session.messages[-1]   # TODO balloch: this is a hack make more general
+                print(attempt)
+                new_loc = qa_ai(f"In the context of the story {story}, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
+                creative_loc = creative_ai(f"Given the story, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more")
+                print('##next_loc?, ', new_loc)
+                print('##creative_loc?, ', creative_loc)
+                new_loc = new_loc.replace('Location Name:','').strip()
+                new_locs_list = tidy_llm_list_string(new_loc, strip_nums=True)
+                # new_locs_list = [s.strip() for s in new_locs_list]
+                ## Exposition Check and remove
+                # if len(new_locs_list) > 1:
+                #     orig_len = len(new_locs_list)
+                #     for i in reversed(range(orig_len)):
+                #         if len(new_locs_list[i]) == 0 or new_locs_list[i][0] not in ('0','1','2','3','4','5','6','7','8','9'):
+                #             print('deleting: ',new_locs_list[i])
+                #             del new_locs_list[i]
+                attempt += 1
+                if attempt > 5:
+                    raise IndexError
+            new_locs_list = tidy_llm_list_string(new_locs_list)  #[s.lstrip('0123456789 .').rstrip(' .') for s in new_locs_list]
+            ## TODO balloch: ground at least one of these locations
+            current_task.expected_visit_location = new_locs_list
+            print('##new_locs_list, ', new_locs_list)
+        ## Need to update the location per question
+        if idx+1 < len(story_point_list_present):
+            creative_future_loc = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the name of one location, nothing more")
+            print('creative_future_loc, ', creative_future_loc)   # where is the most likely/best starting point for a task like ________
+
+            init_loc = tidy_llm_list_string(creative_future_loc)[0]  #[s.lstrip('0123456789 .').rstrip(' .') for s in creative_future_loc.split('\n')][0]
+            if False:  ## TODO: potentially better solution for the future
+                init_loc = qa_ai(f"Choose the location category that is most likely best to start to {story_point_list_present[idx+1]}: [Categories] \n {creative_future_loc} \n Only respond with the location name, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
+            init_loc = init_loc.replace('Location Name:','').strip()
+            print('future_loc, ', init_loc)   # where is the most likely/best starting point for a task like ________
+
+            # del creative_ai.default_session.messages[-1]
+
+        ### Objects
+        get_objects = qa_ai(f"List the physical objects referenced in the sentence. \n [Example] \n Sentence: 'Do research and find evidence or maps that lead to the treasures whereabouts' \n Objects: 1. evidence \n 2. map \n 2. treasure. \n [Query] \n Sentence: '{point}' \n Objects: ")
+        get_objects = tidy_llm_list_string(get_objects)  ## TODO balloch make this a lambda
+        print('##get_objects, ', get_objects)
+        # need_item_tf = qa_ai(f"True or False: In the story: \n {story} \n is it necessary to 'have' {get_objects} to {point_present}?")
+        # need_item_tf = qa_ai(f"In the story: \n {story} \n For the characters to {point_present} what physical items are necessary besides {get_objects}?")  ## Doesn't work tooo complex
+        current_task.objects_required = get_objects
+        obj_uses = []
+        if len(get_objects) > 0:
+            for obj in get_objects:
+                obj_possess_tf = qa_ai(f"True or False: In the sentence '{point}', the {obj} is possessed or acquired. ")
+                print('###', obj, "possessed or acquired: ", obj_possess_tf)
+                obj_use_tf = qa_ai(f"What one word best describes how the {the_characters} use {obj} in {point}'? ")
+                print('###', obj, "how used: ", obj_use_tf)
+
+            ## TODO balloch: try ground objects. if no real objects remaining, announce imaginary
+            ## TODO balloch: add a go_to_object +  pick_object subtask
+
+        ## deepen:
+
+
+        ## Need to update the objects per question
+        # if idx+1 < len(story_point_list_present):
+        #     future_precon = qa_ai(f"In the context of the story {story}, what objects must {the_characters} interact with before they can reasonably {story_point_list_present[idx+1]}? Only respond with the object names, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
+        state['loc'] = init_loc
+        state['time'] += 1
+        print('##state,' , state)
+
+        story_tree.subtasks.append(current_task)
+
+
+    
+    #############
+    ### Visualize the story tree
+    #############
+
+    # Visualize the task tree and render the graph
+    dot_graph = visualize_task_tree(story_tree) #root_task)
+
+    # Render the graph as an image in the notebook
+    dot_graph.format = 'png'
+    dot_graph.render("task_tree", view=True)
+
+
+
 
         # How Ambient works:
         # Ask for objects first, then ask for story

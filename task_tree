@@ -1,0 +1,14 @@
+// Task Tree
+digraph {
+	140036745922592 [label="Find Buried Pirate Treasure"]
+	140036745922592 -> 140036745969328
+	140036745969328 [label="Instead of keeping the treasure for themselves, Astro and Playmate decide to share it with the people of their town."]
+	140036745922592 -> 140036745923552
+	140036745923552 [label="They dig tirelessly until they unearth a dusty old chest, filled with treasure."]
+	140036745922592 -> 140036746629024
+	140036746629024 [label="Astro and Playmate follow the clues on the map, overcoming challenges and obstacles along the way."]
+	140036745922592 -> 140036745915360
+	140036745915360 [label="They carefully unfold the map and decide to embark on a thrilling quest."]
+	140036745922592 -> 140036745924080
+	140036745924080 [label="Astro and Playmate find an old, tattered map buried in the sand."]
+}
