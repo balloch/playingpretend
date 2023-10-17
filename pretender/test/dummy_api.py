@@ -1,4 +1,5 @@
 import numpy as np
+import time 
 
 from pretender.htn import Object
 
@@ -27,8 +28,15 @@ class RobotAPI:
             raise NotImplementedError('Only left and right turns currently implemented')
         return NotImplementedError('still using teleportation')
 
+    def wait(self, waittime):
+        time.sleep(waittime)
+
+    def utterance(self, utter_str):
+        # TODO: add some sort of popup bubble?
+        print(utter_str)
+
     def go_To(self, loc):
-        ## TODO balloch: currently teleport. Add A* and use _move and _turn
+        ## TODO: currently teleport. Add A* and use _move and _turn
         if len(self._errors) > 0:
             self._errors = []
         self.curr_loc = loc
@@ -180,7 +188,7 @@ class ImaginaryAgent:
         return self._errors
     
 
-real_object_locations = {
+real_object_map = {
     'refrigerator_1':2,
     'refrigerator_2':3,
     'kitchen_island_1':5,
@@ -202,8 +210,9 @@ real_object_locations = {
 }
 
 
-objects_stripped = [s.rstrip('01234567890_').replace('_',' ') for s in real_object_locations.keys()]
-object_types = set(objects_stripped)
+objects_stripped = [s.rstrip('01234567890_').replace('_',' ') for s in real_object_map.keys()]
+real_object_types = set(objects_stripped)
+real_locations = set(real_object_map.values())
 
 
 themes = [

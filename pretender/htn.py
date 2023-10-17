@@ -79,8 +79,8 @@ class State: #(BaseModel)
 
 class Task: #(BaseModel)
     """
-    A task is a tuple t = (N, T, E, P), where N is a task name, T is a set of terms.
-    The terms of a task are the objects required for the task to be performed.
+    A task is a tuple t = (N, T, E, P), where N is a task name, T is a set of precodition terms.
+    The precondition terms of a task are the things the must be true for the task to be performed.
     These may be simply symbols, which will be checked for existence ('John' is valid if the state contains 'John'),
     or they may be predicates, which will be checked for truth ('at(John, Home)' is valid if the state contains 'at(John, Home)').
     E are the expected effects of the task, which are checked for truth after the task is performed.
@@ -88,10 +88,10 @@ class Task: #(BaseModel)
     When the task is called for execution, if it is primitive, it executes the primitive function P.
     If not, it iteratively calls the functions of its subtasks.
     """
-    def __init__(self, name, expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=None, root=False):
+    def __init__(self, name, preconditions=[], expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
         # super().__init__(**kwargs)
         self.name = name
-        # self.terms = terms  ## preconditions
+        self.precon_terms = preconditions
         self.expected_start_location = expected_start_location
         self.expected_visit_location = expected_visit_location
         self.objects_required = objects_required
@@ -102,6 +102,12 @@ class Task: #(BaseModel)
 
     def add_subtask(self, subtask):
         self.subtasks.append(subtask)
+    
+    def add_precondition(self, pre_key, pre_value):
+        if pre_key in self.precon_terms:
+            self.precon_terms[pre_key].append(pre_value)
+        else:
+            self.precon_terms[pre_key] = [pre_value]
 
     def __call__(self, state, **kwds: Any) -> Any:
         # If primitive, this is an operator that has some effect on the world
