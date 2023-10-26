@@ -1,4 +1,4 @@
-from bidict import bidict 
+from bidict import bidict, ValueDuplicationError
 
 
 def try_grounding(new_ent, curr_grounding, ent_type='location', curr_loc=None, llm=None):
@@ -16,6 +16,10 @@ def try_grounding(new_ent, curr_grounding, ent_type='location', curr_loc=None, l
     # Greedy
     for alt,altv in curr_grounding.inverse.items():
         if altv[0:2] == 'r_':
-            curr_grounding[new_ent] = alt
-            return alt
+            try:
+                curr_grounding.inverse[alt] = new_ent
+                return alt
+            except ValueDuplicationError:
+                pass
+            
     return new_ent

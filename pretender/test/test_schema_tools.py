@@ -1,5 +1,6 @@
 import unittest
-from pretender.creative_assistant import extract_basic_pos, extract_pos_and_entities  # Import the function you want to test
+from pretender.utils.schema_tools import extract_basic_pos, extract_pos_and_entities  # Import the function you want to test
+# from ..utils.schema_tools import extract_basic_pos, extract_pos_and_entities  # Import the function you want to test
 import json
 
 # Your JSON data

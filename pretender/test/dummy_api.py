@@ -187,6 +187,15 @@ class ImaginaryAgent:
             return self._errors
         return self._errors
     
+    def wait(self, waittime):
+        time.sleep(waittime)
+
+    def utterance(self, utter_str):
+        # TODO: add some sort of popup bubble?
+        print(utter_str)
+
+
+    
 
 real_object_map = {
     'refrigerator_1':2,

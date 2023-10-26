@@ -4,7 +4,6 @@ A pygame script that displays images in the 'images' directory, and shows the op
 
 import pygame
 import os
-import time
 from pathlib import Path
 import pdb
 

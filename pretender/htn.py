@@ -88,10 +88,12 @@ class Task: #(BaseModel)
     When the task is called for execution, if it is primitive, it executes the primitive function P.
     If not, it iteratively calls the functions of its subtasks.
     """
-    def __init__(self, name, preconditions=[], expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
+    def __init__(self, name, preconditions=None, expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
         # super().__init__(**kwargs)
         self.name = name
-        self.precon_terms = preconditions
+        if preconditions is None:
+            preconditions = dict()
+        self.preconditions = preconditions
         self.expected_start_location = expected_start_location
         self.expected_visit_location = expected_visit_location
         self.objects_required = objects_required
@@ -104,10 +106,10 @@ class Task: #(BaseModel)
         self.subtasks.append(subtask)
     
     def add_precondition(self, pre_key, pre_value):
-        if pre_key in self.precon_terms:
-            self.precon_terms[pre_key].append(pre_value)
+        if pre_key in self.preconditions:
+            self.preconditions[pre_key].append(pre_value)
         else:
-            self.precon_terms[pre_key] = [pre_value]
+            self.preconditions[pre_key] = [pre_value]
 
     def __call__(self, state, **kwds: Any) -> Any:
         # If primitive, this is an operator that has some effect on the world

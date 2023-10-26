@@ -5,10 +5,12 @@ from simpleaichat import AIChat
 import os
 from getpass import getpass
 from bidict import bidict
+import logging
+import sys
 
 from pretender.assistants import LogicAssistant, CreativeAssistant
 from pretender.htn import Task, Object
-from pretender.utils.llm_utils import tidy_llm_list_string
+from pretender.utils.llm_utils import tidy_llm_list_string, grammatical_list_str
 from pretender.utils.viz_utils import visualize_task_tree
 from pretender.utils.planning_utils import try_grounding
 from pretender.test.dummy_api import RobotAPI, ImaginaryAgent, real_object_map, real_locations
@@ -25,17 +27,21 @@ except OSError:
     nlp = spacy.load("en_core_web_sm")
 
 
+# logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+# logging.info('We processed %d records', len(processed_records))
+
+
 ## Path to current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-'''make argparser'''
 parser = argparse.ArgumentParser(description='Run the game')
 parser.add_argument('--api_key', type=str, default=None, help='OpenAI API key')
 parser.add_argument('--model', type=str, default='gpt-3.5-turbo-0613', help='LLM Model')
 parser.add_argument('--system_prompt', type=str, default='You are a helpful story planner', help='System prompt')
 parser.add_argument('--save_messages', default=False, action='store_true', help='Save messages')
 parser.add_argument('--input_allowed', default=False, action='store_true', help='whether there can be console input')
+parser.add_argument('--debug', default=False, action='store_true', help='whether to print debug messages')
 
 
 
@@ -67,6 +73,13 @@ How to determine when to decompose creative? based on perceived time:
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    # set the logger level according to the command line args
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    logging.debug('A debug message!')
+
     ## ensure api key
     if args.api_key is None:
         api_file_path = os.path.join(current_dir, 'utils/api_key.txt')
@@ -181,13 +194,9 @@ if __name__ == "__main__":
 
     ## TODO balloch: automate this 
     characters = ['Astro', 'Playmate']
-    lc = len(characters)
-    if lc > 1:
-        the_characters = 'and ' + characters[-1]
-        if lc > 2:
-            the_characters = ', ' + the_characters
-        for cha in characters[:lc-1]:
-            the_characters += cha
+    the_characters = grammatical_list_str(characters)
+    print('the_characters: ', the_characters)
+
 
     ############
     ### Decompose story points
@@ -205,7 +214,7 @@ if __name__ == "__main__":
 
     all_locations = bidict({story_init_loc:0})
     for loc in real_locations:
-        all_locations['r_'+loc]=loc
+        all_locations['r_'+str(loc)]=loc
     all_objects = bidict()
     for obj in real_object_map.keys():
         all_objects['r_'+obj]=obj
@@ -216,7 +225,7 @@ if __name__ == "__main__":
     for idx, point in enumerate(story_point_list_present):
         current_task = Task(
             name= point,
-            precondition={'start_loc',curr_loc},
+            preconditions={'start_loc':curr_loc},
         )
         # Check primitives i.e. if they have to possess something to do this story point
         #############
@@ -317,25 +326,24 @@ if __name__ == "__main__":
             curr_loc = curr_loc.replace('Location Name:','').strip()
             print('future_loc, ', curr_loc)   # where is the most likely/best starting point for a task like ________
             # TODO balloch: check for loc already existing, 
-            current_task.add_precondition('end_loc',loc)
+            current_task.add_precondition('end_loc',curr_loc)
             current_task.add_subtask(Task(
-                    name= 'goto_'+loc,
-                    effects=[{'loc':loc}],
+                    name= 'goto_'+curr_loc,
+                    effects=[{'loc':curr_loc}],
                     primitive_fn=ImaginaryAgent.go_To, ))
-            all_locations[loc]=try_grounding(loc,all_locations)
+            if curr_loc not in all_locations:
+                all_locations[curr_loc]=try_grounding(
+                    new_ent=curr_loc,
+                    curr_grounding=all_locations)
 
             # del creative_ai.default_session.messages[-1]
 
         ## deepen:
-        list_of_subtasks = ''
-        for idx, subtask in enumerate(current_task.subtasks):
-            list_of_subtasks += subtask.name
-            if idx != len(current_task.subtasks)-1:
-                list_of_subtasks += ', '
-            if idx == len(current_task.subtasks)-2:
-                list_of_subtasks += 'and '
-        deepen_subtask = qa_ai(f"True or False:  to successfully '{point}', it is enough for the {the_characters} to only .") # \n context story: \n {story} \n .")
-        add_subtask = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the name of one location, nothing more")
+        str_of_subtasks = grammatical_list_str(current_task.subtasks, 'name')
+        print('str_of_subtasks: ', str_of_subtasks)
+        deepen_subtask = qa_ai(f"True or False:  given the story ({story}), to successfully '{point}' it was enough for {the_characters} to {str_of_subtasks}.") # \n context story: \n {story} \n .")
+        # TODO balloch: add the schema for this question that breaks it down into "Subject" "Verb" "Object"
+        add_subtask = creative_ai(f"Given the story and the answer {deepen_subtask} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'")
         
         ## order subtasks
 
