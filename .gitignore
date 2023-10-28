@@ -407,4 +407,4 @@ api_key
 .idea/
 
 # alfworld-download-data
-alfworld-data
+alfworld_server/alfworld

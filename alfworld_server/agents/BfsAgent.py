@@ -1,22 +1,9 @@
-from alfworld_interfacer.env.WalkerResetter import WalkerResetter
+from alfworld_server.env.WalkerResetter import WalkerResetter
 from textworld.logic.pddl_logic import State as PddlState
 from collections import deque
+from common.State import State
 
 import random
-
-class State:
-    def __init__(self, steps_taken: [], pddl_state: PddlState, admissable_commands: [], expert_plan):
-        self.steps_taken = steps_taken
-        self.pddl_state = pddl_state
-        self.admissable_commands = admissable_commands
-        self.expert_plan = expert_plan
-
-    def __eq__(self, other):
-        return self.pddl_state.__eq__(other.pddl_state)
-
-    def __hash__(self):
-        return hash(frozenset(self.pddl_state.facts))
-
 
 class BfsAgent:
     def __init__(self, env, debug_statements=False, debug_quick_play=False, debug_quick_play_expert_rate=0.6):
