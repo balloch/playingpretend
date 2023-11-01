@@ -21,6 +21,47 @@ from interfacer.pddl_parser.action import Action
 from common.Type import Type
 from common.Predicate import Predicate
 from common.Parameter import Parameter
+from common.AtomicAction import AtomicAction
+from common.Precondition import Precondition
+
+
+class ActionParser:
+    def get_parameters_from_variables_and_map(self, variables, parameter_map):
+        parameters = []
+        for variable in variables:
+            parameters.append(parameter_map[variable])
+        return parameters
+    def build_parameter_map(self, parameter_tuples):
+        parameter_map = {}
+        for parameter_tuple in parameter_tuples:
+            parameter = Parameter(parameter_tuple[0], Type(parameter_tuple[1]))
+            parameter_map[parameter.name] = parameter
+        return parameter_map
+
+    def get_preconditions(self, preconditions_set, parameter_map):
+        preconditions = []
+        for precondition_tuple in preconditions_set:
+            variables = precondition_tuple[1:]
+            parameters = self.get_parameters_from_variables_and_map(variables, parameter_map)
+            preconditions.append(Precondition(precondition_tuple[0], parameters))
+        return preconditions
+
+    def get_effects(self, effects_set, parameter_map):
+        effects = []
+        for effects_tuple in effects_set:
+            variables = effects_tuple[1:]
+            parameters = self.get_parameters_from_variables_and_map(variables, parameter_map)
+            effects.append(Precondition(effects_tuple[0], parameters))
+        return effects
+
+    def parse(self, action):
+        parameter_map = self.build_parameter_map(action.parameters)
+        add_effects = self.get_effects(action.add_effects, parameter_map)
+        del_effects = self.get_effects(action.del_effects, parameter_map)
+        preconditions = self.get_preconditions(action.positive_preconditions, parameter_map)
+
+        return AtomicAction(action.name, preconditions, add_effects, del_effects)
+
 
 class PDDL_Parser:
 
@@ -69,6 +110,7 @@ class PDDL_Parser:
             self.objects = {}
             self.actions = []
             self.predicates = {}
+            self.parameter_map = {}
             while tokens:
                 group = tokens.pop(0)
                 t = group.pop(0)
@@ -285,12 +327,21 @@ class PDDL_Parser:
         for parameter_name, type in parameters_dict.items():
             parameters.append(Parameter(parameter_name, type))
         return parameters
+
     def get_predicates(self):
         predicates = []
         for predicate_name, parameters_dict in self.predicates.items():
             parameters = self.get_parameters(parameters_dict)
             predicates.append(Predicate(predicate_name, parameters))
         return predicates
+
+    def get_atomic_actions(self):
+        atomic_actions = []
+        action_parser = ActionParser()
+        for action in self.actions:
+            atomic_action = action_parser.parse(action)
+            atomic_actions.append(atomic_action)
+        return atomic_actions
 # -----------------------------------------------
 # Main
 # -----------------------------------------------
