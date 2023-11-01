@@ -16,6 +16,9 @@ class schema_tasks(BaseModel):
     preconditions: str = Field(description="List of facts that must be true to execute the action")
     effect: str = Field(description="Effects of taking the action")
 
+class return_one_word(BaseModel):
+    answer: str = Field(description="Answer to the question")
+    word: str = Field(description="The one word")
 
 class schema_write_ttrpg_setting(BaseModel):
     """Write a fun and innovative live-action role playing scenario"""

@@ -88,8 +88,9 @@ class Task: #(BaseModel)
     When the task is called for execution, if it is primitive, it executes the primitive function P.
     If not, it iteratively calls the functions of its subtasks.
     """
-    def __init__(self, name, preconditions=None, expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
+    def __init__(self, description, name=None, preconditions=None, expected_start_location=None, expected_visit_location=[], objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
         # super().__init__(**kwargs)
+        self.description = description
         self.name = name
         if preconditions is None:
             preconditions = dict()
@@ -101,6 +102,7 @@ class Task: #(BaseModel)
         self.subtasks = subtasks
         self.effects = effects
         self.root = root
+        self.visited_planner = False
 
     def add_subtask(self, subtask):
         self.subtasks.append(subtask)
@@ -111,16 +113,32 @@ class Task: #(BaseModel)
         else:
             self.preconditions[pre_key] = [pre_value]
 
+    def check_complete(self):
+        if self.primitive_fn:
+            return True
+        else:
+            return all(subtask.check_complete() for subtask in self.subtasks)
+
     def __call__(self, state, **kwds: Any) -> Any:
         # If primitive, this is an operator that has some effect on the world
         # If not primitive, calls its list of subtasks
-        e = ['Execution Errors:']
+        # e = ['Execution Errors:']
+        e = None
+        # Check preconditions for existence in the state
+        for pre_key, pre_value in self.preconditions.items():
+            if pre_key not in state.vars:
+                e = [(self.name, 'PreconditionNotPresent', pre_key, pre_value)]
+                return e
+            elif pre_value != state.vars[pre_key]:
+                e = [(self.name, 'PreconditionNotEqual', pre_key, pre_value)]
+                return e
+            
         if self.primitive_fn:
             expected_state = state.sim_apply_effects(self.effects)
             new_state = self.primitive_fn(state, **kwds)
             diff = new_state.diff(expected_state)
             if diff :
-                return [(self.name, 'StateMatch', state, diff)]
+                return [(self.name, 'StateMatchFailure', state, diff)]
             else: 
                 return []
         else:

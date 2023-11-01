@@ -7,6 +7,7 @@ from getpass import getpass
 from bidict import bidict
 import logging
 import sys
+import pickle
 
 from pretender.assistants import LogicAssistant, CreativeAssistant
 from pretender.htn import Task, Object
@@ -42,6 +43,9 @@ parser.add_argument('--system_prompt', type=str, default='You are a helpful stor
 parser.add_argument('--save_messages', default=False, action='store_true', help='Save messages')
 parser.add_argument('--input_allowed', default=False, action='store_true', help='whether there can be console input')
 parser.add_argument('--debug', default=False, action='store_true', help='whether to print debug messages')
+parser.add_argument('--story_depth', type=int, default=0, help='The deepest level of the story tree to generate')
+parser.add_argument('--save', default=False, action='store_true', help='whether to save the story tree')
+parser.add_argument('--load', type=str, default=None, help='load a story tree from a file')
 
 
 
@@ -71,27 +75,7 @@ How to determine when to decompose creative? based on perceived time:
     - if LLM thinks it will take a short time (enter cave, a spell that was casted), then by rule autoassociate-with "Say" e.g. astro says "I casted a magic missile"
 """
 
-if __name__ == "__main__":
-    args = parser.parse_args()
-    # set the logger level according to the command line args
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-    logging.debug('A debug message!')
-
-    ## ensure api key
-    if args.api_key is None:
-        api_file_path = os.path.join(current_dir, 'utils/api_key.txt')
-        if "OPENAI_API_KEY" in os.environ and len(os.environ["OPENAI_API_KEY"]) > 0:
-            args.api_key = os.environ["OPENAI_API_KEY"]
-        elif os.path.exists(api_file_path) and os.path.getsize(api_file_path) > 0:
-            with open(api_file_path, 'r') as f:
-                args.api_key = f.read()  
-        elif args.input_allowed is True:  # TODO balloch: do better here
-            args.api_key = getpass("Please enter your API key: ")
-        else:
-            raise ValueError("Must provide OpenAI API key")
+def main_planner(args):
 
     system_prompt = """You are a helpful assistant. You keep your answers brief. 
     When asked for steps or a list you answer with an enumerated list. 
@@ -106,13 +90,16 @@ if __name__ == "__main__":
 
     theme = 'Find Buried Pirate Treasure'
 
-    qa_ai = LogicAssistant(model='gpt-3.5-turbo-0613',
-                           save_messages=False,
-                           api_key=args.api_key, 
-                           model_params = {"temperature": 0.0})
+    qa_ai = LogicAssistant(
+        model='gpt-3.5-turbo-0613',
+        system_prompt=logic_system_prompt,
+        save_messages=False,
+        api_key=args.api_key, 
+        model_params = {"temperature": 0.0})
     creative_ai = CreativeAssistant(
         theme=theme,
         model='gpt-3.5-turbo-0613',
+        system_prompt=creative_system_prompt,
         save_messages=True,
         api_key=args.api_key, 
         model_params = {"temperature": 0.1})
@@ -161,13 +148,15 @@ if __name__ == "__main__":
             ## Autoground:
 
             real = Task(
-                name = primitive_str,
-                primitive_fn = primitive[1],
+                description=primitive_str,
+                name=primitive_str,
+                primitive_fn=primitive[1],
                 )
             # imaginary_fn = lambda
             imaginary = Task(
-                name = primitive_str,
-                primitive_fn = getattr(im_agent, primitive_str),
+                description=primitive_str,
+                name=primitive_str,
+                primitive_fn=getattr(im_agent, primitive_str),
                 )
 
             real_tasks.append(real)
@@ -183,6 +172,7 @@ if __name__ == "__main__":
 
     print(Object.object_coll)
     story_tree = Task(
+        description=story,
         name=theme,
         expected_start_location=story_init_loc,
         expected_visit_location=[],
@@ -192,7 +182,7 @@ if __name__ == "__main__":
         root=True,
     )
 
-    ## TODO balloch: automate this 
+    ## TODO: automatically detect this 
     characters = ['Astro', 'Playmate']
     the_characters = grammatical_list_str(characters)
     print('the_characters: ', the_characters)
@@ -219,14 +209,30 @@ if __name__ == "__main__":
     for obj in real_object_map.keys():
         all_objects['r_'+obj]=obj
 
+    #############
+    ### Initialize the task stack
+    #############
+    task_decomp_stack = []
+
+    for idx, point in enumerate(story_point_list_present):
+        sp_task = Task(
+            description= point,
+            preconditions={'start_loc':curr_loc})
+        curr_root.subtasks.append(sp_task)
+        task_decomp_stack.append(sp_task)
+
+
     ############
     ### Main Planner Loop
     ############
-    for idx, point in enumerate(story_point_list_present):
-        current_task = Task(
-            name= point,
-            preconditions={'start_loc':curr_loc},
-        )
+    while len(task_decomp_stack):
+
+        current_task = task_decomp_stack[-1]
+        if current_task.visited_planner:
+            imaginary_tasks.append(current_task)
+            task_decomp_stack.pop()
+            continue
+
         # Check primitives i.e. if they have to possess something to do this story point
         #############
         ##### Primitive Decomps:
@@ -251,24 +257,23 @@ if __name__ == "__main__":
             for obj in get_objects:
                 obj_possess_tf = qa_ai(f"True or False: In the sentence '{point}',  {the_characters} need to possessed or acquired {obj} to use it. ")
                 print('###', obj, "possessed or acquired: ", obj_possess_tf)
-                obj_use = qa_ai(f"What one verb best describes how {the_characters} use or interact with {obj} in '{point}'? If it is enough that {the_characters} simply have {obj} then say 'possess'.")  
+                obj_use = qa_ai(f"What one-word action best describes how {the_characters} use or interact with {obj} in '{point}'? If it is enough that {the_characters} simply have {obj} then say 'possess'.")  
                 print('###', obj, "how used: ", obj_use)
                 obj_uses.append(obj_use)
 
                 # TODO balloch: try ground objects. if no real objects remaining, announce imaginary
                 # TODO balloch: hack, currently skipping all except "possess" and that all objects are "here"
-                if obj_use == 'possess':
+                if obj_use.verb == 'possess':
                     current_task.add_precondition(obj_use,obj)
-                    # current_task.add_subtask(Task(
-                    #         name= 'goto_'+obj,
-                    #         effects=[{'loc':obj.loc}],
-                    #         primitive_fn=ImaginaryAgent.goto_Object, ))
+                    # TODO balloch: design task reuse around "pick"
                     current_task.add_subtask(Task(
+                            description=obj_use, # TODO balloch: fix obj_use to differentiate between full response and verb
                             name= 'pick_'+obj,
                             effects=[{'possess':obj}],
-                            primitive_fn=ImaginaryAgent.pick_Object, ))
+                            primitive_fn=ImaginaryAgent.pick_Object))
                     all_objects[obj]=try_grounding(obj, all_objects)
-
+                else:
+                    pass
 
 
         ### Locations
@@ -290,9 +295,10 @@ if __name__ == "__main__":
                 del creative_ai.llm.default_session.messages[-1]   # TODO balloch: this is a hack make more general
                 print(attempt)
                 new_loc = qa_ai(f"In the context of the story {story}, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
-                creative_loc = creative_ai(f"Given the story, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more")
                 print('##next_loc?, ', new_loc)
-                print('##creative_loc?, ', creative_loc)
+                if False:
+                    creative_loc = creative_ai(f"Given the story, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more")
+                    print('##creative_loc?, ', creative_loc)
                 new_loc = new_loc.replace('Location Name:','').strip()
                 new_locs_list = tidy_llm_list_string(new_loc, strip_nums=True)
 
@@ -308,9 +314,10 @@ if __name__ == "__main__":
             for loc in new_locs_list:
                 current_task.add_precondition('loc',loc)
                 current_task.add_subtask(Task(
-                        name= 'goto_'+loc,
-                        effects=[{'loc':loc}],
-                        primitive_fn=ImaginaryAgent.go_To, ))
+                    description='goto_'+loc, # TODO balloch: fix obj_use to differentiate between full response and verb
+                    name= 'goto_'+loc,
+                    effects=[{'loc':loc}],
+                    primitive_fn=ImaginaryAgent.go_To, ))
                 all_locations[loc] = loc  # Needs to be a unique hashable values, but not something that collides with the real locations so I use itself
 
             print('##new_locs_list, ', new_locs_list)
@@ -328,6 +335,7 @@ if __name__ == "__main__":
             # TODO balloch: check for loc already existing, 
             current_task.add_precondition('end_loc',curr_loc)
             current_task.add_subtask(Task(
+                    description= 'goto_'+curr_loc,
                     name= 'goto_'+curr_loc,
                     effects=[{'loc':curr_loc}],
                     primitive_fn=ImaginaryAgent.go_To, ))
@@ -336,16 +344,28 @@ if __name__ == "__main__":
                     new_ent=curr_loc,
                     curr_grounding=all_locations)
 
-            # del creative_ai.default_session.messages[-1]
 
         ## deepen:
         str_of_subtasks = grammatical_list_str(current_task.subtasks, 'name')
         print('str_of_subtasks: ', str_of_subtasks)
-        deepen_subtask = qa_ai(f"True or False:  given the story ({story}), to successfully '{point}' it was enough for {the_characters} to {str_of_subtasks}.") # \n context story: \n {story} \n .")
+        deepen_response = qa_ai(f"[Question] \n True or False: it is possible for {the_characters} to successfully '{point}' by only {str_of_subtasks}. [Context] \n story: \n {story}.")
+        if deepen_tf[0:4] == 'True':
+            deepen_tf = True
+        elif deepen_tf[0:5] == 'False':
+            deepen_tf = False
         # TODO balloch: add the schema for this question that breaks it down into "Subject" "Verb" "Object"
-        add_subtask = creative_ai(f"Given the story and the answer {deepen_subtask} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'")
+        deepen_description = creative_ai(
+            prompt=f"Given the story and the answer {deepen_response} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'"),
         
-        ## order subtasks
+        print('##deepen_subtask, ', deepen_description)
+        deepen_subtask = Task(
+            description=deepen_description,
+            name=deepen_description
+            )
+        current_task.add_subtask(deepen_subtask)
+        task_decomp_stack.append(deepen_subtask)  # Append the subtask to the stack
+
+        ## TODO: order subtasks
 
         ## Need to update the objects per question
         # if idx+1 < len(story_point_list_present):
@@ -354,10 +374,49 @@ if __name__ == "__main__":
         state['time'] += 1  # TODO balloch: add time to tasks
         print('##state,' , state)
 
-        curr_root.subtasks.append(current_task)
+        # curr_root.subtasks.append(current_task)
+
+    # save story tree as pickle object
+    if args.save:
+        with open('story_tree.pkl', 'wb') as f:
+            pickle.dump(story_tree, f)
+
+    return story_tree
 
 
+
+if __name__ == "__main__":
+
+    args = parser.parse_args()
+    # set the logger level according to the command line args
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+    logging.debug('A debug message!')
+
+    ## ensure api key
+    if args.api_key is None:
+        api_file_path = os.path.join(current_dir, 'utils/api_key.txt')
+        if "OPENAI_API_KEY" in os.environ and len(os.environ["OPENAI_API_KEY"]) > 0:
+            args.api_key = os.environ["OPENAI_API_KEY"]
+        elif os.path.exists(api_file_path) and os.path.getsize(api_file_path) > 0:
+            with open(api_file_path, 'r') as f:
+                args.api_key = f.read()  
+        elif args.input_allowed is True:  # TODO balloch: do better here
+            args.api_key = getpass("Please enter your API key: ")
+        else:
+            raise ValueError("Must provide OpenAI API key")
     
+    #############
+    ### Run the story planner
+    #############
+    if args.load:
+        with open(args.load, 'rb') as f:
+            story_tree = pickle.load(f)
+    else:
+        story_tree = main_planner(args)
+        
     #############
     ### Visualize the story tree
     #############
@@ -369,13 +428,23 @@ if __name__ == "__main__":
     dot_graph.format = 'png'
     dot_graph.render("task_tree", view=True)
 
-
     #############
     ### Run the story tree
     #############
-    # TODO balloch: persistant states in execution!! pub sub model?
-    state['loc'] = story_init_loc
-    story_tree()
+    # TODO balloch: change to persistant states in execution!! pub sub model?
+    init_state = {'time':0, 'loc':story_tree.expected_start_location,} # 'loc_type':story_init_loc[1],}
+    story_tree(state=init_state)
 
+    ## Figure out communication between ALFworld and planner first!!
+    ## Planner "client" sending one action to alfworld
+    ## Server executes action and sends back next state + errors
+    ## Alfworld "server" sending back the new state
 
+    ## Advice: start with just 2 actions: goto and pick for example
+    ## What does the state passed to Planner look like?
+    #### Is it easier to pass the preconditions and have the server-side check them
 
+    ## DECIDE ON HARD CODE INJECTION FANTASY WORLD ERROR: 
+    ## "Oh no, goblins stole the {}"
+    #### Once the planner knows that an object is necessary for a task, 
+    #### we can inject the fantasy world error as a world change at the ImaginaryAgent api level

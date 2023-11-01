@@ -39,7 +39,6 @@ How to determine when to decompose creative? based on perceived time:
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-
 class BaseAssistant(): #BaseModel):
 
     def __init__(self, llm=None, api_key=None, model=None, system_prompt=None, save_messages=False, model_params=None):
