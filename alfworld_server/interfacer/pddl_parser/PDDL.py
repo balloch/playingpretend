@@ -17,8 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import re
-from action import Action
-
+from interfacer.pddl_parser.action import Action
+from common.Type import Type
+from common.Predicate import Predicate
+from common.Parameter import Parameter
 
 class PDDL_Parser:
 
@@ -269,7 +271,26 @@ class PDDL_Parser:
                 else:
                     positive.append(predicate)
 
+    # -----------------------------------------------
+    # convert attributes to objects
+    # -----------------------------------------------
+    def get_types(self)->[Type]:
+        types = []
+        for type in self.types['object']:
+            types.append(Type(type))
+        return types
 
+    def get_parameters(self, parameters_dict):
+        parameters = []
+        for parameter_name, type in parameters_dict.items():
+            parameters.append(Parameter(parameter_name, type))
+        return parameters
+    def get_predicates(self):
+        predicates = []
+        for predicate_name, parameters_dict in self.predicates.items():
+            parameters = self.get_parameters(parameters_dict)
+            predicates.append(Predicate(predicate_name, parameters))
+        return predicates
 # -----------------------------------------------
 # Main
 # -----------------------------------------------

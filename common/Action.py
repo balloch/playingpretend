@@ -1,7 +1,6 @@
-import typing
-from Precondition import Precondition
-from Predicate import Predicate
-from CommandTemplate import CommandTemplate
+from common.Precondition import Precondition
+from common.Predicate import Predicate
+from common.CommandTemplate import CommandTemplate
 class Action:
     def __init__(self, name: str, preconditions: [Precondition], add_effects: [Predicate],
                  del_effects: [Predicate], command_template: CommandTemplate):

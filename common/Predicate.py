@@ -1,5 +1,5 @@
-from Parameter import Parameter
+from common.Parameter import Parameter
 class Predicate:
-    def __init__(self, name:str, parameters:[]):
+    def __init__(self, name:str, parameters:[Parameter]):
         self.name = name
         self.parameters = parameters
