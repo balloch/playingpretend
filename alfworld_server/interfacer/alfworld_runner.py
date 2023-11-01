@@ -53,7 +53,7 @@ def init_game(problem):
 def create_alfworld_env(problem=None):
     gamefile = init_game(problem)
     # register a new Gym environment.
-    infos = textworld.EnvInfos(won=True, admissible_commands=True, game=True, expert_plan=True)
+    infos = textworld.EnvInfos(won=True, admissible_commands=True, game=True, expert_plan=True, verbs=True, entities=True)
     env_id = textworld.gym.register_game(gamefile, infos,
                                          max_episode_steps=1000000,
                                          wrappers=[AlfredDemangler])
