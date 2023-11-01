@@ -23,7 +23,10 @@ from common.Predicate import Predicate
 from common.Parameter import Parameter
 from common.AtomicAction import AtomicAction
 from common.Precondition import Precondition
-
+from common.AlfworldObject import AlfworldObject
+from common.Location import Location
+from common.Receptacle import Receptacle
+from interfacer.utils.constants import CONSTANTS
 
 class ActionParser:
     def get_parameters_from_variables_and_map(self, variables, parameter_map):
@@ -62,6 +65,80 @@ class ActionParser:
 
         return AtomicAction(action.name, preconditions, add_effects, del_effects)
 
+class StateParser:
+    def parse_types_objects(self, objects_dict):
+        type_to_objects_map = {}
+        objects_map = {}
+        type_map = {}
+
+        for type in objects_dict.keys():
+            alfworld_type = Type(type)
+            type_map[alfworld_type.name] = alfworld_type
+            type_to_objects_map[alfworld_type.name] = []
+
+        for type_name, object_names in objects_dict.items():
+            type = type_map[type_name]
+            for object_name in object_names:
+                object = AlfworldObject(object_name, type)
+                type_to_objects_map[type_name].append(object)
+                objects_map[object.name] = object
+
+        return type_map, type_to_objects_map, objects_map
+
+    def get_locations(self, objects_map, location_type):
+        location_objects = objects_map[location_type.name]
+        return {location_object.name: Location(location_object.name, location_type)
+                for location_object in location_objects}
+
+    def get_receptacles(self, objects_map, receptacle_type):
+        location_objects = objects_map[receptacle_type.name]
+        return {receptacle_object.name: Receptacle(receptacle_object.name, receptacle_type)
+                for receptacle_object in location_objects}
+
+    def get_locatable(self, location_name, locations_map, receptacles_map):
+        if location_name in locations_map:
+            return locations_map[location_name]
+        elif location_name in receptacles_map:
+            return receptacles_map[location_name]
+        else:
+            return None
+    def set_locations(self, objects_map, locations_map, receptacles_map, state_tuples):
+        agent_location = None
+        for state_tuple in state_tuples:
+            tuple_type = state_tuple[0]
+            # atLocation
+            if tuple_type == CONSTANTS.PREDICATE_TYPES.ATLOCATION:
+                agent_location = self.get_locatable(state_tuple[2], locations_map, receptacles_map)
+                agent = objects_map[state_tuple[1]]
+                agent.set_location(agent_location)
+            # receptacleAtLocation
+            # objectAtLocation
+            # inreceptacle
+            elif tuple_type == CONSTANTS.PREDICATE_TYPES.RECEPTACLEATLOCATION \
+                    or tuple_type == CONSTANTS.PREDICATE_TYPES.INRECEPTACLE\
+                    or tuple_type == CONSTANTS.PREDICATE_TYPES.OBJECTATLOCATION:
+                item = None
+
+                if tuple_type == CONSTANTS.PREDICATE_TYPES.RECEPTACLEATLOCATION:
+                    item = receptacles_map[state_tuple[1]]
+                elif tuple_type == CONSTANTS.PREDICATE_TYPES.INRECEPTACLE\
+                        or tuple_type == CONSTANTS.PREDICATE_TYPES.OBJECTATLOCATION:
+                    item = objects_map[state_tuple[1]]
+
+                locatable = self.get_locatable(state_tuple[2], locations_map, receptacles_map)
+
+                item.set_location(locatable)
+            # inreceptacleobject
+            # todo: currently unsure about the requirement of this predicate. skipping for now
+            # with the intention to revisit if bugs arise because of this
+        return objects_map, locations_map, receptacles_map
+    def parse(self, objects_dict, state_tuples):
+        type_map, type_to_objects_map, objects_map = self.parse_types_objects(objects_dict)
+        locations_map = self.get_locations(type_to_objects_map, type_map[CONSTANTS.OBJECT_TYPES.LOCATION])
+        receptacles_map = self.get_receptacles(type_to_objects_map, type_map[CONSTANTS.OBJECT_TYPES.RECEPTACLE])
+        objects_map, locations_map, receptacles_map = self.set_locations(objects_map, locations_map, receptacles_map, state_tuples)
+
+        return objects_map, locations_map, receptacles_map
 
 class PDDL_Parser:
 
@@ -290,6 +367,9 @@ class PDDL_Parser:
         else:
             raise Exception('File ' + problem_filename + ' does not match problem pattern')
 
+        state_parser = StateParser()
+        self.processed_objects, self.processed_locations, self.processed_receptacles \
+            = state_parser.parse(self.objects, self.state)
     def parse_problem_extended(self, t, group):
         print(str(t) + ' is not recognized in problem')
 
@@ -342,15 +422,26 @@ class PDDL_Parser:
             atomic_action = action_parser.parse(action)
             atomic_actions.append(atomic_action)
         return atomic_actions
+
+    def get_objects(self):
+        return self.processed_objects
+    def get_locations(self):
+        return self.processed_locations
+    def get_receptacles(self):
+        return self.processed_receptacles
 # -----------------------------------------------
 # Main
 # -----------------------------------------------
 if __name__ == '__main__':
     import sys
     DOMAIN_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/domain.pddl"
+    PROBLEM_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/problem.pddl"
     parser = PDDL_Parser()
     parser.parse_domain(DOMAIN_PDDL_PATH)
-    # parser.parse_problem(problem)
-    print('Domain name: ' + str(parser.domain_name))
+    parser.parse_problem(PROBLEM_PDDL_PATH)
+    # print('Domain name: ' + str(parser.domain_name))
+    objects = parser.get_objects()
+    locations = parser.get_locations()
+    receptacles = parser.get_receptacles()
     for act in parser.actions:
         print(act)

@@ -16,7 +16,14 @@ def init_state(request):
     # _ , infos = env.reset()
     # state = compute_state([], infos)
     DOMAIN_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/domain.pddl"
+    PROBLEM_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/problem.pddl"
     parser = PDDL_Parser()
     parser.parse_domain(DOMAIN_PDDL_PATH)
-    initial_state = InitialState(parser.get_types(), parser.get_predicates(), parser.get_atomic_actions())
+    parser.parse_problem(PROBLEM_PDDL_PATH)
+    initial_state = InitialState(parser.get_types(),
+                                 parser.get_predicates(),
+                                 parser.get_atomic_actions(),
+                                 parser.get_objects(),
+                                 parser.get_locations(),
+                                 parser.get_receptacles())
     return JsonResponse(jsonpickle.dumps(initial_state), safe=False)
