@@ -3,6 +3,7 @@ import json
 import glob
 import random
 from os.path import join as pjoin
+from interfacer.utils.constants import CONSTANTS
 
 import textworld
 
@@ -48,7 +49,7 @@ def init_game(domain, grammar, problem, traj_data_file, gamefile):
     json.dump(gamedata, open(gamefile, "w"))
     return gamefile
 
-def create_alfworld_env(constants):
+def create_alfworld_env(constants = CONSTANTS.FILES):
     gamefile = init_game(constants.ORIGINAL_DOMAIN_PDDL_PATH,
                          constants.GRAMMAR_PATH,
                          constants.ORIGINAL_PROBLEM_PDDL_PATH,

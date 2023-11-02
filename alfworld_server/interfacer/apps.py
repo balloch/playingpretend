@@ -9,4 +9,4 @@ class InterfacerConfig(AppConfig):
 
     def ready(self):
         print("Making things ready")
-        _ = AlfworldEnv(create_alfworld_env(CONSTANTS.FILES))
+        _ = AlfworldEnv(create_alfworld_env())

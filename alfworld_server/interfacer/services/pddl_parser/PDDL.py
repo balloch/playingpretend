@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import re
-from interfacer.pddl_parser.action import Action
+from interfacer.services.pddl_parser.action import Action
 from common.Type import Type
 from common.Predicate import Predicate
 from common.Parameter import Parameter
@@ -452,9 +452,8 @@ class PDDL_Parser:
 # Main
 # -----------------------------------------------
 if __name__ == '__main__':
-    import sys
-    DOMAIN_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/domain.pddl"
-    PROBLEM_PDDL_PATH = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data/problem.pddl"
+    DOMAIN_PDDL_PATH = "/interfacer/data/domain.pddl"
+    PROBLEM_PDDL_PATH = "/interfacer/data/problem.pddl"
     parser = PDDL_Parser()
     parser.parse_domain(DOMAIN_PDDL_PATH)
     parser.parse_problem(PROBLEM_PDDL_PATH)
