@@ -5,7 +5,7 @@ class Precondition:
         self.parameters = parameters
 
     # def get_variable_names(self, variables:dict):
-    #     return [parameter.name for parameter in self.parameters]
+    #     return [parameter.id for parameter in self.parameters]
     # def check_essential_variables(self, variables: dict):
     #     variable_names = self.get_variable_names(variables)
     #     for variable in self.essential_variables:
@@ -15,7 +15,7 @@ class Precondition:
     #     def evaluate(self, variables: dict) -> bool:
     #         if not self.check_essential_variables(variables):
     #             variable_names = self.get_variable_names(variables)
-    #             raise Exception(f"For precondition {self.name}, Insufficient variables: {variable_names}")
+    #             raise Exception(f"For precondition {self.id}, Insufficient variables: {variable_names}")
     #         return self.eval_fn(variables)
     #
     #

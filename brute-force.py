@@ -117,7 +117,7 @@ class AlfredDemangler(textworld.core.Wrapper):
 
         demangler = Demangler(game_infos=self._game.infos)
         for info in self._game.infos.values():
-            info.name = demangler.demangle_alfred_name(info.id)
+            info.id = demangler.demangle_alfred_name(info.id)
 
 
 def think(args):

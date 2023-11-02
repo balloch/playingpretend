@@ -796,6 +796,10 @@ SafeType - rtype
         (objectAtLocation Statue_bar__plus_01_dot_82_bar__plus_01_dot_04_bar__minus_01_dot_42 loc_bar_7_bar__minus_3_bar_2_bar_45)
         )
 
-
+        (:goal
+             (and
+                 (objectType ?ot DeskLampType)
+             )
+        )
 
     )

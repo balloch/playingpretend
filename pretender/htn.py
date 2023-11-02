@@ -79,7 +79,7 @@ class State: #(BaseModel)
 
 class Task: #(BaseModel)
     """
-    A task is a tuple t = (N, T, E, P), where N is a task name, T is a set of precodition terms.
+    A task is a tuple t = (N, T, E, P), where N is a task id, T is a set of precodition terms.
     The precondition terms of a task are the things the must be true for the task to be performed.
     These may be simply symbols, which will be checked for existence ('John' is valid if the state contains 'John'),
     or they may be predicates, which will be checked for truth ('at(John, Home)' is valid if the state contains 'at(John, Home)').

@@ -25,7 +25,7 @@ class BfsAgent:
         visited_states = set()
 
         env = self.env
-        _, infos = env.reset()
+        something, infos = env.reset()
 
         state_queue.append(self.compute_state([], infos))
         win_state = None

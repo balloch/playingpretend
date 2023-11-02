@@ -8,10 +8,10 @@ json_data = {
   "quest": "Slay the dragon Drakon the Terrible and bring peace back to the kingdom of Draconia.",
   "success_metric": "The players will know they have succeeded when they have defeated Drakon the Terrible and the land is no longer plagued by his terror.",
   "init": "The adventure begins in the bustling town of Faldir, where the players meet a group of fellow adventurers who have also set their sights on slaying the dragon.",
-  "name": "Draconia",
+  "id": "Draconia",
   "pcs": [
     {
-      "name": "Grimbold Stonehammer",
+      "id": "Grimbold Stonehammer",
       "race": "Dwarf",
       "job": "Warrior",
       "story": "Grimbold comes from a long line of proud dwarven warriors. He seeks to prove himself and cement his family's legacy by slaying the dragon.",
@@ -27,7 +27,7 @@ json_data = {
       ]
     },
     {
-      "name": "Elara Nightshade",
+      "id": "Elara Nightshade",
       "race": "Elf",
       "job": "Ranger",
       "story": "Elara is an expert tracker and archer, trained in the ancient arts of the elven rangers. She has dedicated her life to protecting the realm from creatures like the dragon.",

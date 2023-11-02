@@ -81,18 +81,18 @@ class StateParser:
             for object_name in object_names:
                 object = AlfworldObject(object_name, type)
                 type_to_objects_map[type_name].append(object)
-                objects_map[object.name] = object
+                objects_map[object.id] = object
 
         return type_map, type_to_objects_map, objects_map
 
     def get_locations(self, objects_map, location_type):
         location_objects = objects_map[location_type.name]
-        return {location_object.name: Location(location_object.name, location_type)
+        return {location_object.id: Location(location_object.id, location_type)
                 for location_object in location_objects}
 
     def get_receptacles(self, objects_map, receptacle_type):
         location_objects = objects_map[receptacle_type.name]
-        return {receptacle_object.name: Receptacle(receptacle_object.name, receptacle_type)
+        return {receptacle_object.id: Receptacle(receptacle_object.id, receptacle_type)
                 for receptacle_object in location_objects}
 
     def get_locatable(self, location_name, locations_map, receptacles_map):
@@ -396,6 +396,24 @@ class PDDL_Parser:
     # -----------------------------------------------
     # convert attributes to objects
     # -----------------------------------------------
+    def set_entity_name(self, id, name):
+        map = None
+        if id in self.processed_objects:
+            map = self.processed_objects
+        elif id in self.processed_locations:
+            map = self.processed_locations
+        elif id in self.processed_receptacles:
+            map = self.processed_receptacles
+        else:
+            return
+        map[id].set_name(name)
+
+    def parse_env_infos(self, infos):
+        entity_infos = infos['game'].infos
+        for id, entity_info in entity_infos.items():
+            entity_name = entity_info.id
+            self.set_entity_name(id, entity_name)
+
     def get_types(self)->[Type]:
         types = []
         for type in self.types['object']:

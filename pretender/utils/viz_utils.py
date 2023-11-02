@@ -14,7 +14,7 @@ def visualize_task_tree(root_task):
         if parent_id is not None:
             dot.edge(str(parent_id), str(task_id))
 
-        dot.node(str(task_id), task.name)
+        dot.node(str(task_id), task.id)
 
         for subtask in task.subtasks:
             stack.append((subtask, task_id))
