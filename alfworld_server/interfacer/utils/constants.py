@@ -21,3 +21,10 @@ class CONSTANTS:
         ORIGINAL_PROBLEM_PDDL_PATH = os.path.join(DIRECTORY, "original_problem.pddl")
         TRAJ_DATA_FILE = os.path.join(DIRECTORY, "traj_data.json")
         GAME_FILE = os.path.join(DIRECTORY, "game.tw-pddl")
+
+    class COMMAND_MAPPING:
+        mapping = {
+            "gotolocation": "go to {l}",
+            "pickupobject": "take {o} from {r}",
+            "putobject": "put {o} in/on {r}",
+        }

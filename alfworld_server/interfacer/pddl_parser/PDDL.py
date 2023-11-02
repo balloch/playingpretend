@@ -438,6 +438,7 @@ class PDDL_Parser:
         action_parser = ActionParser()
         for action in self.actions:
             atomic_action = action_parser.parse(action)
+            atomic_action.set_command_template(CONSTANTS.COMMAND_MAPPING.mapping[atomic_action.id])
             atomic_actions.append(atomic_action)
         return atomic_actions
 
