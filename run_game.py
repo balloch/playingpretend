@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
         ## Get future location
         if idx+1 < len(story_point_list_present):
-            creative_future_loc = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the id of one location, nothing more")
+            creative_future_loc = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the name of one location, nothing more")
             print('creative_future_loc, ', creative_future_loc)   # where is the most likely/best starting point for a task like ________
 
             curr_loc = tidy_llm_list_string(creative_future_loc)[0]  #[s.lstrip('0123456789 .').rstrip(' .') for s in creative_future_loc.split('\n')][0]
