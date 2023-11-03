@@ -18,16 +18,17 @@
 
 import re
 from interfacer.services.pddl_parser.action import Action
-from common.Type import Type
-from common.Predicate import Predicate
-from common.Parameter import Parameter
-from common.AtomicAction import AtomicAction
-from common.Precondition import Precondition
-from common.AlfworldObject import AlfworldObject
-from common.Location import Location
-from common.Receptacle import Receptacle
+from pretender.common.Type import Type
+from pretender.common.Predicate import Predicate
+from pretender.common.Parameter import Parameter
+from pretender.common.AtomicAction import AtomicAction
+from pretender.common.Precondition import Precondition
+from pretender.common.AlfworldObject import AlfworldObject
+from pretender.common.Location import Location
+from pretender.common.Receptacle import Receptacle
 from interfacer.utils.constants import CONSTANTS
 from interfacer.utils.methods import get_receptacles_from_agent
+
 
 class ActionParser:
     def get_parameters_from_variables_and_map(self, variables, parameter_map):

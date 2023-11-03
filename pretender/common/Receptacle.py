@@ -1,5 +1,7 @@
-from common.Locatable import Locatable
-from common.Type import Type
+from pretender.common.Locatable import Locatable
+from pretender.common.Type import Type
+
+
 class Receptacle(Locatable):
     def __init__(self, id, type:[Type] = None, location:Locatable = None):
         super().__init__(id, type)

@@ -1,7 +1,7 @@
 from django.http import HttpResponse, JsonResponse
 from interfacer.alfworld_runner import create_textworld_env, create_alfworld_env
 from interfacer.alfworld_env import AlfworldEnv, TextworldEnv
-from common.State import compute_state
+from pretender.common.State import compute_state
 from interfacer.models.InitialState import InitialState
 from interfacer.models.CurrentState import CurrentState
 from interfacer.services.pddl_parser.PDDL import PDDL_Parser
@@ -10,6 +10,7 @@ from interfacer.utils.constants import CONSTANTS
 from django.views.decorators.csrf import csrf_exempt
 import json
 import jsonpickle
+
 
 def index(request):
     return HttpResponse("Hello, world.")

@@ -1,4 +1,6 @@
-from common.Parameter import Parameter
+from pretender.common.Parameter import Parameter
+
+
 class Precondition:
     def __init__(self, name, parameters: [Parameter]):
         self.name = name

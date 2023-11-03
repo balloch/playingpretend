@@ -1,6 +1,8 @@
-from common.Locatable import Locatable
-from common.AlfworldObject import AlfworldObject
-from common.Predicate import Predicate
+from pretender.common.Locatable import Locatable
+from pretender.common.AlfworldObject import AlfworldObject
+from pretender.common.Predicate import Predicate
+
+
 class CurrentState:
     def __init__(self,
                  visible_objects:[AlfworldObject],

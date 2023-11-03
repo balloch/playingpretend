@@ -1,9 +1,10 @@
-from common.Type import Type
-from common.Predicate import Predicate
-from common.AtomicAction import AtomicAction
-from common.AlfworldObject import AlfworldObject
-from common.Location import Location
-from common.Receptacle import Receptacle
+from pretender.common.Type import Type
+from pretender.common.Predicate import Predicate
+from pretender.common.AtomicAction import AtomicAction
+from pretender.common.AlfworldObject import AlfworldObject
+from pretender.common.Location import Location
+from pretender.common.Receptacle import Receptacle
+
 
 class InitialState:
     def __init__(self, types: [Type],

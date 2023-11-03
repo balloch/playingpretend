@@ -1,9 +1,10 @@
 from alfworld_server.env.WalkerResetter import WalkerResetter
 from textworld.logic.pddl_logic import State as PddlState
 from collections import deque
-from common.State import State
+from pretender.common.State import State
 
 import random
+
 
 class BfsAgent:
     def __init__(self, env, debug_statements=False, debug_quick_play=False, debug_quick_play_expert_rate=0.6):

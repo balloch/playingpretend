@@ -1,8 +1,10 @@
 from interfacer.utils.methods import get_receptacles_from_agent
 from interfacer.utils.constants import CONSTANTS
-from common.Receptacle import Receptacle
-from common.Location import Location
-from common.AlfworldObject import AlfworldObject
+from pretender.common.Receptacle import Receptacle
+from pretender.common.Location import Location
+from pretender.common.AlfworldObject import AlfworldObject
+
+
 class InfoParser:
     def parse_visible_objects(self, agent):
         visible_objects = None

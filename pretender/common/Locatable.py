@@ -1,4 +1,6 @@
-from common.Type import Type
+from pretender.common.Type import Type
+
+
 class Locatable:
     def __init__(self, id, type:[Type]):
         self.id = id

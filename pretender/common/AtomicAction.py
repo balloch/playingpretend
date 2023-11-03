@@ -1,8 +1,10 @@
-from common.Precondition import Precondition
-from common.Predicate import Predicate
-from common.CommandTemplate import CommandTemplate
-from common.AlfworldObject import AlfworldObject
-from common.Locatable import Locatable
+from pretender.common.Precondition import Precondition
+from pretender.common.Predicate import Predicate
+from pretender.common.CommandTemplate import CommandTemplate
+from pretender.common.AlfworldObject import AlfworldObject
+from pretender.common.Locatable import Locatable
+
+
 class AtomicAction:
     def __init__(self, id: str, preconditions: [Precondition], add_effects: [Predicate],
                  del_effects: [Predicate], command_template: CommandTemplate = None):

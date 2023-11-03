@@ -1,5 +1,7 @@
-from common.Type import Type
-from common.Locatable import Locatable
+from pretender.common.Type import Type
+from pretender.common.Locatable import Locatable
+
+
 class AlfworldObject:
     def __init__(self, id, type:Type=None, current_location: Locatable = None):
         self.id = id

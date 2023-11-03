@@ -14,7 +14,8 @@ from alfworld.info import ALFWORLD_DATA
 from alfworld.env.thor_env import ThorEnv
 from alfworld.agents.detector.mrcnn import load_pretrained_model
 from alfworld.agents.controller import OracleAgent, OracleAStarAgent, MaskRCNNAgent, MaskRCNNAStarAgent
-from common.CustomArgs import CustomArgs
+from pretender.common.CustomArgs import CustomArgs
+
 
 def setup_scene(env, traj_data, r_idx, args, reward_type='dense'):
     # scene setup
