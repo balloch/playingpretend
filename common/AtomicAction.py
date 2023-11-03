@@ -1,6 +1,8 @@
 from common.Precondition import Precondition
 from common.Predicate import Predicate
 from common.CommandTemplate import CommandTemplate
+from common.AlfworldObject import AlfworldObject
+from common.Locatable import Locatable
 class AtomicAction:
     def __init__(self, id: str, preconditions: [Precondition], add_effects: [Predicate],
                  del_effects: [Predicate], command_template: CommandTemplate = None):
@@ -17,3 +19,11 @@ class AtomicAction:
 
     def set_name(self, name:str):
         self.name = name
+
+class AtomicActionFeedback:
+    # Only if any of the attributes are not None, will there be a change conveyed
+    def __init__(self, agent_location:Locatable, inventory: [AlfworldObject], objectsWithinReach:[AlfworldObject], objectWithLocationUpdate:[AlfworldObject]):
+        self.agent_location = agent_location
+        self.inventory = inventory
+        self.objectsWithinReach = objectsWithinReach
+        self.objectWithLocationUpdate = objectWithLocationUpdate

@@ -11,10 +11,12 @@ class InitialState:
                  actions: [AtomicAction],
                  objects:[AlfworldObject],
                  locations:[Location],
-                 receptacles:[Receptacle]):
+                 receptacles:[Receptacle],
+                 visible_receptacles:[Receptacle]):
         self.types = types
         self.predicates = predicates
         self.actions = actions
         self.objects = objects
         self.locations = locations
         self.receptacles = receptacles
+        self.visible_receptacles = visible_receptacles

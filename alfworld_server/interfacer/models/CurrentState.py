@@ -3,11 +3,15 @@ from common.AlfworldObject import AlfworldObject
 from common.Predicate import Predicate
 class CurrentState:
     def __init__(self,
-                 objects:[AlfworldObject],
+                 visible_objects:[AlfworldObject],
+                 receptacles: [Locatable],
+                 current_inventory:[AlfworldObject],
                  current_location:Locatable,
-                 current_inventory:AlfworldObject,
-                 state_predicates:[Predicate]):
-        self.objects = objects
-        self.current_location = current_location
+                 objects_with_updates: [AlfworldObject],
+                 error_message: str):
+        self.visible_objects = visible_objects
+        self.receptacles = receptacles
         self.current_inventory = current_inventory
-        self.state_predicates = state_predicates
+        self.current_location = current_location
+        self.objects_with_updates = objects_with_updates
+        self.error_message = error_message

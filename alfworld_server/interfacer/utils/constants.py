@@ -28,3 +28,13 @@ class CONSTANTS:
             "pickupobject": "take {o} from {r}",
             "putobject": "put {o} in/on {r}",
         }
+
+    class ERRORS:
+        NOTHING_HAPPENS = "Nothing happens."
+
+    class ALFWORLDENV:
+        class COMMAND:
+            ACTION = "action"
+            TARGET = "tar"
+            OBJ = "obj"
+

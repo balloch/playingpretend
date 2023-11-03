@@ -27,6 +27,7 @@ from common.AlfworldObject import AlfworldObject
 from common.Location import Location
 from common.Receptacle import Receptacle
 from interfacer.utils.constants import CONSTANTS
+from interfacer.utils.methods import get_receptacles_from_agent
 
 class ActionParser:
     def get_parameters_from_variables_and_map(self, variables, parameter_map):
@@ -442,12 +443,16 @@ class PDDL_Parser:
             atomic_actions.append(atomic_action)
         return atomic_actions
 
+    def parse_visible_receptacles(self, agent):
+        self.visible_receptacles = get_receptacles_from_agent(agent)
     def get_objects(self):
         return self.processed_objects
     def get_locations(self):
         return self.processed_locations
     def get_receptacles(self):
         return self.processed_receptacles
+    def get_visible_receptacles(self):
+        return self.visible_receptacles
 # -----------------------------------------------
 # Main
 # -----------------------------------------------
