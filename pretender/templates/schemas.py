@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 ## Schema Classes
 class schema_player_character(BaseModel):
-    name: str = Field(description="Character id")
+    name: str = Field(description="Character name")
     race: str = Field(description="Character race")
     job: str = Field(description="Character class/job")
     story: str = Field(description="Three-sentence character history")
@@ -12,7 +12,7 @@ class schema_player_character(BaseModel):
 
 
 class schema_tasks(BaseModel):
-    name: str = Field(description="Action id")
+    name: str = Field(description="Action name")
     preconditions: str = Field(description="List of facts that must be true to execute the action")
     effect: str = Field(description="Effects of taking the action")
 

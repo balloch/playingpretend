@@ -67,7 +67,7 @@ class RobotAPI:
         ## Find object in inventory:
         if isinstance(obj, str):
             for hash, inv_obj in self.inventory.items():
-                if inv_obj.id == obj:
+                if inv_obj.name == obj:
                     real_obj = inv_obj
                     break
         elif isinstance(obj, Object):
@@ -86,7 +86,7 @@ class RobotAPI:
             self._errors = []
         if isinstance(obj, str):
             for hash, inv_obj in self.inventory.items():
-                if inv_obj.id == obj:
+                if inv_obj.name == obj:
                     real_obj = inv_obj
                     break
         elif isinstance(obj, Object):
@@ -151,7 +151,7 @@ class ImaginaryAgent:
         ## Find object in inventory:
         if isinstance(obj, str):
             for hash, inv_obj in self.inventory.items():
-                if inv_obj.id == obj:
+                if inv_obj.name == obj:
                     real_obj = inv_obj
                     break
         elif isinstance(obj, Object):
@@ -170,7 +170,7 @@ class ImaginaryAgent:
             self._errors = []
         if isinstance(obj, str):
             for hash, inv_obj in self.inventory.items():
-                if inv_obj.id == obj:
+                if inv_obj.name == obj:
                     real_obj = inv_obj
                     break
         elif isinstance(obj, Object):
