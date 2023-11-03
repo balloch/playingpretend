@@ -111,7 +111,7 @@ if __name__ == "__main__":
     story = creative_ai(f"Write a short story featuring two friends, Astro and Playmate, about {theme} that a 5 year old would understand and enjoy")
     print('story, ', story)
 
-    gen_loc = qa_ai(f"Given the story {story}, where does the story take place? If you can't tell from the story, just say 'Location Name: The story world' \n Example: 'Location Name: <example id>' ")
+    gen_loc = qa_ai(f"Given the story {story}, where does the story take place? If you can't tell from the story, just say 'Location Name: The story world' \n Example: 'Location Name: <example name>' ")
     gen_loc = gen_loc.replace('Location Name:','').strip()
     print('##gen_loc?, ', gen_loc)
 
@@ -251,7 +251,7 @@ if __name__ == "__main__":
                 if obj_use == 'possess':
                     current_task.add_precondition(obj_use,obj)
                     # current_task.add_subtask(Task(
-                    #         id= 'goto_'+obj,
+                    #         name= 'goto_'+obj,
                     #         effects=[{'loc':obj.loc}],
                     #         primitive_fn=ImaginaryAgent.goto_Object, ))
                     current_task.add_subtask(Task(
@@ -313,7 +313,7 @@ if __name__ == "__main__":
 
             curr_loc = tidy_llm_list_string(creative_future_loc)[0]  #[s.lstrip('0123456789 .').rstrip(' .') for s in creative_future_loc.split('\n')][0]
             if False:  # potentially alt solution for the future
-                curr_loc = qa_ai(f"Choose the location category that is most likely best to start to {story_point_list_present[idx+1]}: [Categories] \n {creative_future_loc} \n Only respond with the location id, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
+                curr_loc = qa_ai(f"Choose the location category that is most likely best to start to {story_point_list_present[idx+1]}: [Categories] \n {creative_future_loc} \n Only respond with the location name, nothing more. ")  #[Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
             curr_loc = curr_loc.replace('Location Name:','').strip()
             print('future_loc, ', curr_loc)   # where is the most likely/best starting point for a task like ________
             # TODO balloch: check for loc already existing, 
@@ -329,13 +329,13 @@ if __name__ == "__main__":
         ## deepen:
         list_of_subtasks = ''
         for idx, subtask in enumerate(current_task.subtasks):
-            list_of_subtasks += subtask.id
+            list_of_subtasks += subtask.name
             if idx != len(current_task.subtasks)-1:
                 list_of_subtasks += ', '
             if idx == len(current_task.subtasks)-2:
                 list_of_subtasks += 'and '
         deepen_subtask = qa_ai(f"True or False:  to successfully '{point}', it is enough for the {the_characters} to only .") # \n context story: \n {story} \n .")
-        add_subtask = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the id of one location, nothing more")
+        add_subtask = creative_ai(f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx+1]}? Only respond with the name of one location, nothing more")
         
         ## order subtasks
 

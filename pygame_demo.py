@@ -116,7 +116,7 @@ class ImageGraph:
 
 
 
-            # image = new_node.id
+            # image = new_node.name
             # pos = int(image[len(envname)])
             # position_imagehood = (pos-1,pos, pos+1)
             # dir = DIRECTIONS.index(image[len(envname)+1:])
@@ -307,7 +307,7 @@ if __name__ == '__main__':
     if test == True:
         # make graph
         sample_node = Node('images/kitchen3s')
-        print('id', sample_node.name)
+        print('name', sample_node.name)
         print('dir', sample_node.directory)
         print('position', sample_node.position)
         print('direction', sample_node.direction)
