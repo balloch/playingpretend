@@ -42,7 +42,7 @@ def perform_action(request):
     alfworld_env = AlfworldEnv()
     env, agent = alfworld_env.env, alfworld_env.agent
     agent.step(command)
-    visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message = InfoParser().parse(agent, command)
-    current_state = CurrentState(visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message)
+    visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message = InfoParser().parse(agent, command)
+    current_state = CurrentState(visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message)
     return JsonResponse(jsonpickle.dumps(current_state), safe=False)
 
