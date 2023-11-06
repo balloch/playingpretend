@@ -1,3 +1,6 @@
 [submodule "alfworld"]
 	path = alfworld
 	url = git@github.com:alfworld/alfworld.git
+[submodule "alfworld_server/pddl-parser"]
+	path = alfworld_server/pddl-parser
+	url = git@github.com:pucrs-automated-planning/pddl-parser.git

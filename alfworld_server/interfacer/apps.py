@@ -1,6 +1,7 @@
 from django.apps import AppConfig
-from .alfworld_runner import create_alfworld_env
-from .alfworld_env import AlfworldEnv
+from .alfworld_runner import create_alfworld_env, create_textworld_env
+from .alfworld_env import AlfworldEnv, TextworldEnv
+from .utils.constants import CONSTANTS
 
 class InterfacerConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -8,4 +9,6 @@ class InterfacerConfig(AppConfig):
 
     def ready(self):
         print("Making things ready")
-        _ = AlfworldEnv(create_alfworld_env())
+        _ = TextworldEnv(create_textworld_env())
+        env, agent = create_alfworld_env()
+        _ = AlfworldEnv(env, agent)
