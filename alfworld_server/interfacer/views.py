@@ -8,6 +8,7 @@ from interfacer.services.pddl_parser.PDDL import PDDL_Parser
 from interfacer.services.info_parser.InfoParser import InfoParser
 from interfacer.utils.constants import CONSTANTS
 from django.views.decorators.csrf import csrf_exempt
+from interfacer.services.command_checker.checkers import check as request_check
 import json
 import jsonpickle
 
@@ -41,8 +42,13 @@ def perform_action(request):
     command = request.body.decode('utf-8')
     alfworld_env = AlfworldEnv()
     env, agent = alfworld_env.env, alfworld_env.agent
-    agent.step(command)
-    visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message = InfoParser().parse(agent, command)
-    current_state = CurrentState(visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message)
+
+    error_message, feedback_message = request_check(agent, command)
+    if len(error_message) != 0:
+        current_state = CurrentState(None, None, None, None, None, error_message, feedback_message)
+    else:
+        agent.step(command)
+        visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message = InfoParser().parse(agent, command)
+        current_state = CurrentState(visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message)
     return JsonResponse(jsonpickle.dumps(current_state), safe=False)
 
