@@ -44,7 +44,8 @@ def create_alfworld_env(problem=CONSTANTS.FILES.DIRECTORY):
     print(f"Playing '{args.problem}'.")
 
     # start THOR
-    env = ThorEnv(player_screen_height=800, player_screen_width=800)
+    # env = ThorEnv(player_screen_height=800, player_screen_width=800)
+    env = ThorEnv()
 
     # load traj_data
     root = args.problem

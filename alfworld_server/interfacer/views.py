@@ -26,15 +26,18 @@ def init_state(request):
     parser = PDDL_Parser()
     parser.parse_domain(CONSTANTS.FILES.DOMAIN_PDDL_PATH)
     parser.parse_problem(CONSTANTS.FILES.PROBLEM_PDDL_PATH)
-    parser.parse_visible_receptacles(agent)
     parser.parse_env_infos(infos)
+    parser.parse_visible_receptacles(agent)
+    parser.parse_distances(agent)
+    min_dist_receptacle, max_dist_receptacle = parser.get_distance_info()
     initial_state = InitialState(parser.get_types(),
                                  parser.get_predicates(),
                                  parser.get_atomic_actions(),
                                  parser.get_objects(),
                                  parser.get_locations(),
                                  parser.get_receptacles(),
-                                 parser.get_visible_receptacles())
+                                 parser.get_visible_receptacles(),
+                                 min_dist_receptacle, max_dist_receptacle)
     return JsonResponse(jsonpickle.dumps(initial_state), safe=False)
 
 @csrf_exempt
