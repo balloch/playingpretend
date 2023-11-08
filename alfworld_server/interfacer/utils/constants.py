@@ -13,7 +13,7 @@ class CONSTANTS:
         RECEPTACLE = "receptacle"
 
     class FILES:
-        DIRECTORY = "/datadrive/code/test/playingpretend/alfworld_server/interfacer/data"
+        DIRECTORY = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data"
         DOMAIN_PDDL_PATH = os.path.join(DIRECTORY, "domain.pddl")
         ORIGINAL_DOMAIN_PDDL_PATH = os.path.join(DIRECTORY, "original_domain.pddl")
         GRAMMAR_PATH = os.path.join(DIRECTORY, "alfred.twl2")

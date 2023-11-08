@@ -25,20 +25,22 @@ class InfoParser:
         if agent.feedback == CONSTANTS.ERRORS.NOTHING_HAPPENS:
             error_message = CONSTANTS.ERRORS.NOTHING_HAPPENS
 
-        return error_message
+    def parse_feedback_message(self, agent):
+        return agent.feedback
+
     def parse_action(self, agent, command):
         parsed_command = agent.parse_command(command)
         objects_with_updates = []
         if parsed_command[CONSTANTS.ALFWORLDENV.COMMAND.ACTION] == agent.Action.PICK:
             obj, tar = parsed_command[CONSTANTS.ALFWORLDENV.COMMAND.OBJ], parsed_command[CONSTANTS.ALFWORLDENV.COMMAND.TARGET]
             new_location = Location("agent1")
-            obj = AlfworldObject(obj, current_location=new_location)
+            obj = AlfworldObject(None, name=obj, current_location=new_location)
             objects_with_updates.append(obj)
         elif parsed_command[CONSTANTS.ALFWORLDENV.COMMAND.ACTION] == agent.Action.PUT:
             obj, tar = parsed_command[CONSTANTS.ALFWORLDENV.COMMAND.OBJ], parsed_command[
                 CONSTANTS.ALFWORLDENV.COMMAND.TARGET]
             new_location = Receptacle(tar)
-            obj = AlfworldObject(obj, current_location=new_location)
+            obj = AlfworldObject(None, name=obj, current_location=new_location)
             objects_with_updates.append(obj)
 
         return objects_with_updates
@@ -48,9 +50,10 @@ class InfoParser:
         current_inventory = self.parse_inventory(agent)
         current_location = self.parse_current_location(agent)
         error_message = self.parse_error_message(agent)
+        feedback_message = self.parse_feedback_message(agent)
         if error_message is None:
             objects_with_updates = self.parse_action(agent, command)
         else:
             objects_with_updates = None
 
-        return visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message
+        return visible_objects, receptacles, current_inventory, current_location, objects_with_updates, error_message, feedback_message
