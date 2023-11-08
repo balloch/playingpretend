@@ -399,12 +399,12 @@ class PDDL_Parser:
     # -----------------------------------------------
     def set_entity_name(self, id, name):
         map = None
-        if id in self.processed_objects:
-            map = self.processed_objects
+        if id in self.processed_receptacles:
+            map = self.processed_receptacles
         elif id in self.processed_locations:
             map = self.processed_locations
-        elif id in self.processed_receptacles:
-            map = self.processed_receptacles
+        elif id in self.processed_objects:
+            map = self.processed_objects
         else:
             return
         map[id].set_name(name)
