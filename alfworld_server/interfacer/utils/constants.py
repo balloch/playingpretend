@@ -1,4 +1,10 @@
 import os
+import pathlib
+
+
+current_file = pathlib.Path(__file__).parent.resolve()
+
+
 class CONSTANTS:
     class PREDICATE_TYPES:
 
@@ -13,7 +19,8 @@ class CONSTANTS:
         RECEPTACLE = "receptacle"
 
     class FILES:
-        DIRECTORY = "/home/suyash/eilab/playingpretend/alfworld_server/interfacer/data"
+        _data_dir = current_file.parent / 'data'
+        DIRECTORY = str(_data_dir)
         DOMAIN_PDDL_PATH = os.path.join(DIRECTORY, "domain.pddl")
         ORIGINAL_DOMAIN_PDDL_PATH = os.path.join(DIRECTORY, "original_domain.pddl")
         GRAMMAR_PATH = os.path.join(DIRECTORY, "alfred.twl2")
