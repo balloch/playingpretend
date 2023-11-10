@@ -13,7 +13,7 @@ import gym
 from alfworld.info import ALFWORLD_DATA
 from alfworld.agents.utils.misc import Demangler, add_task_to_grammar
 
-from alfworld_interfacer.agents.BfsAgent import BfsAgent
+from alfworld_server.agents.BfsAgent import BfsAgent
 
 # def setup_scene(env, traj_data, r_idx, args, reward_type='dense'):
 #     # scene setup
