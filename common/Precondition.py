@@ -1,4 +1,7 @@
 from common.Parameter import Parameter
+
+# TODO: this should inherit from Predicate
+# TODO: there should be structure here for "negative" predicates, i.e. preconditions that require a certain predicate *not* be in the state
 class Precondition:
     def __init__(self, name, parameters: [Parameter]):
         self.name = name

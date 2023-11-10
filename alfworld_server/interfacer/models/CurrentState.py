@@ -8,10 +8,12 @@ class CurrentState:
                  current_inventory:[AlfworldObject],
                  current_location:Locatable,
                  objects_with_updates: [AlfworldObject],
-                 error_message: str):
+                 error_message: str,
+                 feedback_message: str):
         self.visible_objects = visible_objects
         self.receptacles = receptacles
         self.current_inventory = current_inventory
         self.current_location = current_location
         self.objects_with_updates = objects_with_updates
         self.error_message = error_message
+        self.feedback_message = feedback_message

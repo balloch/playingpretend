@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import re
+import math
 from interfacer.services.pddl_parser.action import Action
 from common.Type import Type
 from common.Predicate import Predicate
@@ -25,7 +26,7 @@ from common.AtomicAction import AtomicAction
 from common.Precondition import Precondition
 from common.AlfworldObject import AlfworldObject
 from common.Location import Location
-from common.Receptacle import Receptacle
+from common.Receptacle import Receptacle, dist_between
 from interfacer.utils.constants import CONSTANTS
 from interfacer.utils.methods import get_receptacles_from_agent
 
@@ -399,12 +400,12 @@ class PDDL_Parser:
     # -----------------------------------------------
     def set_entity_name(self, id, name):
         map = None
-        if id in self.processed_objects:
-            map = self.processed_objects
+        if id in self.processed_receptacles:
+            map = self.processed_receptacles
         elif id in self.processed_locations:
             map = self.processed_locations
-        elif id in self.processed_receptacles:
-            map = self.processed_receptacles
+        elif id in self.processed_objects:
+            map = self.processed_objects
         else:
             return
         map[id].set_name(name)
@@ -414,6 +415,17 @@ class PDDL_Parser:
         for id, entity_info in entity_infos.items():
             entity_name = entity_info.id
             self.set_entity_name(id, entity_name)
+
+    # todo: this is such a sad n^2 algorithm hack. resolve names and ids properly.
+    def parse_distances(self, agent):
+        for _, agent_receptacle in agent.receptacles.items():
+            locs = agent_receptacle['locs']
+            receptacle_name = agent_receptacle['num_id']
+            for _, processed_receptacle in self.processed_receptacles.items():
+                if processed_receptacle.name == receptacle_name:
+                    processed_receptacle.set_coords(locs)
+                    break
+
 
     def get_types(self)->[Type]:
         types = []
@@ -443,8 +455,12 @@ class PDDL_Parser:
             atomic_actions.append(atomic_action)
         return atomic_actions
 
+    def filter_based_on_agent_gathered_receptacles(self,processed_receptacles, visible_receptacles):
+        return {k:processed_receptacle for k, processed_receptacle in processed_receptacles.items() if processed_receptacle.name in visible_receptacles}
     def parse_visible_receptacles(self, agent):
         self.visible_receptacles = get_receptacles_from_agent(agent)
+        filtered_map = self.filter_based_on_agent_gathered_receptacles(self.processed_receptacles, self.visible_receptacles)
+        self.processed_receptacles = filtered_map
     def get_objects(self):
         return self.processed_objects
     def get_locations(self):
@@ -453,6 +469,20 @@ class PDDL_Parser:
         return self.processed_receptacles
     def get_visible_receptacles(self):
         return self.visible_receptacles
+
+    def get_distance_info(self):
+        min_recep_a, min_recep_b = None, None
+        min_dist, max_dist = None, None
+        for _, recep_a in self.processed_receptacles.items():
+            for _, recep_b in self.processed_receptacles.items():
+                if recep_a != recep_b:
+                    dist = dist_between(recep_a, recep_b)
+                    min_dist = min(min_dist, dist) if min_dist is not None else dist
+                    if min_dist == dist:
+                        min_recep_a = recep_a
+                        min_recep_b = recep_b
+                    max_dist = max(max_dist, dist) if max_dist is not None else dist
+        return (min_dist, max_dist)
 # -----------------------------------------------
 # Main
 # -----------------------------------------------

@@ -3,6 +3,11 @@ from common.Predicate import Predicate
 from common.CommandTemplate import CommandTemplate
 from common.AlfworldObject import AlfworldObject
 from common.Locatable import Locatable
+
+
+# TODO: this should be a subclass of Task
+# TODO: need to keep more explicit track of params so that unique params are known
+
 class AtomicAction:
     def __init__(self, id: str, preconditions: [Precondition], add_effects: [Predicate],
                  del_effects: [Predicate], command_template: CommandTemplate = None):

@@ -1,3 +1,5 @@
+from common.AtomicAction import AtomicAction
+
 class Task:  # (BaseModel)
     """
     A task is a tuple t = (N, T, E, P), where N is a task id, T is a set of precodition terms.
@@ -10,45 +12,191 @@ class Task:  # (BaseModel)
     If not, it iteratively calls the functions of its subtasks.
     """
 
-    def __init__(self, name, preconditions=[], expected_start_location=None, expected_visit_location=[],
-                 objects_required=[], primitive_fn=None, subtasks=[], effects=[], root=False):
+    def __init__(self, name, preconditions=[[], []], variables=None, expected_start_location=None,
+                 expected_visit_location=[],
+                 objects_required=[], primitive_fn=None, primitive_const={}, subtasks=[], effects=[], root=False,
+                 goal=False):
         # super().__init__(**kwargs)
         self.name = name
-        self.precon_terms = preconditions
+        self.preconditions = preconditions
+        self.effects = effects
+        if variables is None:
+            variables = []
+        self.variables = variables  ## list of unique strings
+        self.assignments = {}  ## dictionary of values assigned to those strings
+        for var in self.variables:
+            self.assignments[var] = ''
+        self.subtasks = subtasks
         self.expected_start_location = expected_start_location
         self.expected_visit_location = expected_visit_location
         self.objects_required = objects_required
         self.primitive_fn = primitive_fn
-        self.subtasks = subtasks
-        self.effects = effects
+        self.primitive_const = primitive_const
         self.root = root
+        self.goal = goal
+        self.execution_state = 0
 
     def add_subtask(self, subtask):
         self.subtasks.append(subtask)
 
     def add_precondition(self, pre_key, pre_value):
-        if pre_key in self.precon_terms:
-            self.precon_terms[pre_key].append(pre_value)
+        if pre_key in self.preconditions:
+            self.preconditions[pre_key].append(pre_value)
         else:
-            self.precon_terms[pre_key] = [pre_value]
+            self.preconditions[pre_key] = [pre_value]
+
+    def from_atomic(self, atomic, function=None):
+        blacklist = ['inreceptacle', 'receptacletype', 'cancontain', 'objecttype']
+        ## abs types: '?r', '?a', '?lend'
+        # TODO this should just use the Precondition and Effects classes
+        # TODO: refactor below so that there is less code reuse
+        precons_pos = []
+        for precon in atomic.preconditions:
+            if precon.name in blacklist:
+                continue  # Skipping. See TODOs in client_example.py:process_init()
+            precon_pos = [precon.name]
+            for p in precon.parameters:
+                p_name = p.name
+                ## below commented out because seems not necessary
+                # p_name = p.name+'1'
+                # val = 1
+                # while p_name in self.variables:
+                #     val += 1
+                #     p_name[:-1]+str(val)
+                self.variables.append(p_name)
+                precon_pos.append('{'+p_name+'}')
+            precons_pos.append(tuple(precon_pos))
+        # TODO: add negative when added to the precondition class
+        precons_neg = []
+        self.preconditions = [precons_pos, precons_neg]
+
+        effects_pos = []  # added effects
+        for effect in atomic.add_effects:
+            if effect.name in blacklist:
+                continue  # Skipping. See TODOs in client_example.py:process_init()
+            eff_pos = [effect.name]
+            for p in effect.parameters:
+                p_name = p.name
+                self.variables.append(p_name)
+                eff_pos.append('{'+p_name+'}')
+            effects_pos.append(tuple(eff_pos))
+        effects_neg = []  # removed effects
+        for effect in atomic.del_effects:
+            if effect.name in blacklist:
+                continue  # Skipping. See TODOs in client_example.py:process_init()
+            eff_neg = [effect.name]
+            for p in effect.parameters:
+                p_name = p.name
+                self.variables.append(p_name)
+                eff_neg.append('{'+p_name+'}')
+            effects_neg.append(tuple(eff_neg))
+        self.effects = [effects_pos, effects_neg]
+
+        self.variables = list(set(self.variables))
+        for var in self.variables:
+            self.assignments[var] = ''
+
+
+        self.primitive_fn = function
+        # TODO: remove the need for this hardcoding
+        if atomic.command_template == 'go to {l}':
+            atomic.command_template = 'go to {?r}'
+        if atomic.command_template == 'take {o} from {r}':
+            atomic.command_template = 'take {?o} from {?r}'
+        if atomic.command_template == 'put {o} in/on {r}':
+            atomic.command_template = 'put {?o} in/on {?r}'
+
+        self.primitive_const = {'command': atomic.command_template}
+
+
+    def bind_variables(self, binding):
+        # TODO : this should be a property/function of predicate class
+        if not (set(binding.keys()) == set(self.variables)):
+            print(
+                f'Error, not all values provided. No assignment done. \n Must provide all of the following: {self.variables}')
+            return
+        self.assignments = binding
+        self.name = self.name[:-4]
+        for key, value in self.assignments.items():
+            self.name += '_' + value
+        ## Update the preconditions and effects
+        new_precons = [[], []]
+        new_effects = [[], []]
+        for i in range(2):
+            for precon in self.preconditions[i]:
+                new_precon = [precon[0]]
+                for elem in precon[1:]:
+                    new_precon.append(elem.format(**self.assignments))
+                new_precons[i].append(tuple(new_precon))
+            for effect in self.effects[i]:
+                new_effect = [effect[0]]
+                for elem in effect[1:]:
+                    new_effect.append(elem.format(**self.assignments))
+                new_effects[i].append(tuple(new_effect))
+        self.preconditions = new_precons
+        self.effects = new_effects
+        for key in self.primitive_const.keys():
+            self.primitive_const[key] = self.primitive_const[key].format(**self.assignments)
+
+
+    def check_precons(self, state):
+        errors = [[pos for pos in self.preconditions[0] if pos not in state], [neg for neg in self.preconditions[1] if neg in state]]
+        return errors
+
+    def apply_effects(self, state, state_change, nav_locations):
+        errors = [[], []]
+        for e_add in self.effects[0]:
+            if e_add in state:
+                print(f"Warning: {e_add} already true")
+            else:
+                state.add(e_add)
+        for e_rm in self.effects[1]:
+            try:
+                state.remove(e_rm)
+            except KeyError:
+                print(f"Warning: {e_rm} already not present")
+
+    def check_effects(self, state, state_change, nav_locations):
+        errors = [[ad for ad in self.effects[0] if ad not in state], [rm for rm in self.effects[1] if rm in state]]
+        # return not (len(errors[0]) or len(errors[1])), errors
+        return errors
+
+    def get_next_prim(self):
+        if self.primitive_fn:
+            return self
+        else:  ## execute NEXT executable function
+            return self.subtasks[self.execution_state]
+
+    def execute_next(self, state, **kwds):
+        kwds.update(self.primitive_const)
+        if self.primitive_fn:
+            response = self.primitive_fn(**kwds)
+            return response
+        else:  ## execute NEXT executable function
+            subtask = self.subtasks[self.execution_state]
+            # Move execution state if the subtask is primitive or has only one subtask remaining
+            if subtask.primitive_fn:
+                self.execution_state += 1
+            elif len(subtask.subtasks) - 1 == subtask.execution_state + 1:
+                self.execution_state += 1
+            return subtask.execute_next(state, **kwds)
+            # e.extend(subtask(state, **kwds))
 
     def __call__(self, state, **kwds):
         # If primitive, this is an operator that has some effect on the world
         # If not primitive, calls its list of subtasks
         e = ['Execution Errors:']
         if self.primitive_fn:
-            expected_state = state.sim_apply_effects(self.effects)
-            new_state = self.primitive_fn(state, **kwds)
-            diff = new_state.diff(expected_state)
-            if diff:
-                return [(self.name, 'StateMatch', state, diff)]
-            else:
-                return []
-        else:
-            # call each function in a list of functions self.subtasks
-            for subtask in self.subtasks:
-                e.extend(subtask(state, **kwds))
-        return e
+            response = self.primitive_fn(**kwds)
+            return response
+        else:  ## execute NEXT executable function
+            subtask = self.subtasks[self.execution_state]
+            # Move execution state if the subtask is primitive or has only one subtask remaining
+            if subtask.primitive_fn:
+                self.execution_state += 1
+            elif len(subtask.subtasks) - 1 == subtask.execution_state + 1:
+                self.execution_state += 1
+            return subtask(state, kwds)
 
     def __hash__(self):
         return hash(frozenset((self.name, self.primitive_fn)))

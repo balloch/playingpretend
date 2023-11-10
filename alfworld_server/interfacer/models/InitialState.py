@@ -12,7 +12,8 @@ class InitialState:
                  objects:[AlfworldObject],
                  locations:[Location],
                  receptacles:[Receptacle],
-                 visible_receptacles:[Receptacle]):
+                 visible_receptacles:[Receptacle],
+                 min_dist_receptacle, max_dist_receptacle):
         self.types = types
         self.predicates = predicates
         self.actions = actions
@@ -20,3 +21,5 @@ class InitialState:
         self.locations = locations
         self.receptacles = receptacles
         self.visible_receptacles = visible_receptacles
+        self.min_dist_receptacle = min_dist_receptacle
+        self.max_dist_receptacle = max_dist_receptacle
