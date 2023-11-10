@@ -14,16 +14,29 @@ Then install the pretender module:
 ```pip install -e .```
 
 ## Alfworld server
+
 1. Setup a new conda environment specifically for running the server, and install requirements.txt in alfworld_server
+
 2. Setup alfworld within alfworld_server
-3. Run the following command to start the server 
-```python
-python manage.py runserver --noreload
+
+3. Export the server directory to the Python Path:
+
+```bash
+export PYTHONPATH=$PYTHONPATH:<your-path-to-playingpretend>/alfworld_server
 ```
-4. client_example.py shows a sample run of hitting an API from the alfworld server.
+
+4. Run the following command to start the server 
+
+```python
+python alfworld_server/manage.py runserver --noreload
+```
+
+To run the planner and execute a plan, then run the `client_example.py`. 
+
+`client_example.py` shows a sample run of hitting an API from the alfworld server.
 
 ### API interface 
-To add you OpenAI API key for running you can add a file `api_key.txt` to the directory `pretender/utils` or simply sent your machine environment variable `OPENAI_API_KEY` as your key.
+To add your OpenAI API key for running you can add a file `api_key.txt` to the directory `pretender/utils` or simply sent your machine environment variable `OPENAI_API_KEY` as your key.
 
 ## Usage
 
