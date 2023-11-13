@@ -1,5 +1,5 @@
 """
-A pygame script that displays images in the 'images' directory, and shows the option to click 'forward', 'left', or 'right' to change the image. 
+A pygame script that displays sample_data in the 'sample_data' directory, and shows the option to click 'forward', 'left', or 'right' to change the image.
 """
 
 import pygame
@@ -44,7 +44,7 @@ class Node:
     
     # def find_neighbors(self):
     #     """
-    #     finds the neighbors of a node based on images in the same directory
+    #     finds the neighbors of a node based on sample_data in the same directory
     #     """
         
     #     position_neighborhood = (self.position-1,self.position, self.position+1)
@@ -77,9 +77,9 @@ class Node:
 
 class ImageGraph:
     """
-    a class that builds and enables navigation of a graph of images
+    a class that builds and enables navigation of a graph of sample_data
     """
-    def __init__(self, start_image='outerkitchen.jpg', image_directory='images', next_node=None) -> None:
+    def __init__(self, start_image='outerkitchen.jpg', image_directory='sample_data', next_node=None) -> None:
         self.start_node = Node(filedata=os.path.join(image_directory,start_image), root=True)
         self.curr_node = self.start_node
         self.node_list = []
@@ -195,7 +195,7 @@ class ImageGraph:
 
 
 class ImageGameDemo:
-    def __init__(self, screen_width=800, screen_height=600, image_directory='images', start_image='outerkitchen.jpg', graph=None):
+    def __init__(self, screen_width=800, screen_height=600, image_directory='sample_data', start_image='outerkitchen.jpg', graph=None):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.image_directory = image_directory
@@ -212,7 +212,7 @@ class ImageGameDemo:
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption('Image Viewer')
 
-        # Load images from the 'images' directory
+        # Load sample_data from the 'sample_data' directory
         self.image_files = [f for f in os.listdir(self.image_directory) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
         current_image_index = 0
 
@@ -223,12 +223,12 @@ class ImageGameDemo:
             self.current_image = pygame.image.load(os.path.join(self.image_directory, self.image_files[current_image_index]))
         self.current_image = pygame.transform.scale(self.current_image, (self.screen_width, self.screen_height))
 
-        # Load button images
+        # Load button sample_data
         forward_img = pygame.image.load('forward_button.jpg')  # Provide your button image paths
         left_img = pygame.image.load('left_button.jpg')
         right_img = pygame.image.load('right_button.jpg')
 
-        # Resize button images
+        # Resize button sample_data
         self.button_width, self.button_height = 50, 50
         self.button_forward = pygame.transform.scale(forward_img, (self.button_width, self.button_height))
         self.button_left = pygame.transform.scale(left_img, (self.button_width, self.button_height))
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     
     if test == True:
         # make graph
-        sample_node = Node('images/kitchen3s')
+        sample_node = Node('sample_data/kitchen3s')
         print('name', sample_node.name)
         print('dir', sample_node.directory)
         print('position', sample_node.position)
@@ -315,6 +315,6 @@ if __name__ == '__main__':
         # sample_node.find_neighbors()
         print(sample_node.left, sample_node.right, sample_node.front, sample_node.back)
 
-    graph.addnodesfromdir('images')
+    graph.addnodesfromdir('sample_data')
 
     run_game(graph)

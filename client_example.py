@@ -1,14 +1,20 @@
 from logging import root
 from copy import deepcopy
 import time
+import os
+import json
+import argparse
 import requests
 import jsonpickle
 from common.Task import Task
 from common.Location import Location
 from common.Receptacle import Receptacle
+import bidict
 
 
-# import bidict
+parser = argparse.ArgumentParser(description='Run the game')
+parser.add_argument('--demo', type=str, default='static', help='static or live demo')
+parser.add_argument('--demo_files', type=str, default='sample_data/demo_data', help='directory of static demo files')
 
 
 def get_initial_state():
@@ -69,6 +75,8 @@ def process_response(state, response):
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
     ## Fill truth table state
     init = get_initial_state()
     real_tasks = init.actions
@@ -87,39 +95,28 @@ if __name__ == "__main__":
         goal=True
     )
 
-    real_tasks = {}
+    ## Primitive tasks, initialized with utterance
+    real_tasks = {'utterance_abs':Task(
+        name='utterance_abs',
+        primitive_fn=print,
+    )
+    }
 
     for action in init.actions:
         real_tasks[action.id+'_abs'] = Task(name=action.id+'_abs')
         real_tasks[action.id+'_abs'].from_atomic(atomic=action,
                                                  function=perform_action)
 
+
     ## Simulate planner & variable binding
-    task_spec = [['gotolocation_abs',
-                  {'?a': 'agent1',
-                   '?lstart': 'loc 1',
-                   '?r': 'desk 1',
-                   '?lend': nav_locations['desk 1']}
-                  ],
-                 ['pickupobject_abs',
-                  {'?a': 'agent1',
-                   '?l': nav_locations['desk 1'],
-                   '?r': 'desk 1',
-                   '?o': 'mug 1'}
-                  ],
-                 ['gotolocation_abs',
-                  {'?a': 'agent1',
-                   '?lstart': nav_locations['desk 1'],
-                   '?r': 'bed 1',
-                   '?lend': nav_locations['bed 1']}
-                  ],
-                 ['putobject_abs',
-                  {'?a': 'agent1',
-                   '?l': nav_locations['bed 1'],
-                   '?r': 'bed 1',
-                   '?o': 'mug 1'}
-                  ],
-                 ]
+    if args.demo == 'static':
+        with open(os.path.join(args.demo_files,'taskspec.json'), 'r') as f:
+            task_spec = json.load(f)['task_spec']
+
+        with open(os.path.join(args.demo_files,'imaginary.json'), 'r') as f:
+            printstory = json.load(f)['printstory']
+
+
 
     for i, ts in enumerate(task_spec):
         new_task = deepcopy(real_tasks[ts[0]])
@@ -156,9 +153,11 @@ if __name__ == "__main__":
             if len(plan_errors[0]):
                 print(f'Errors: absence of {plan_errors[0]}')
         # print(f'response {i}:', history[-1].__dict__)
+        print(printstory[i])
         i += 1
         if curr_task.goal == True:
             print('Goal Reached!!')
             break
         else:
             time.sleep(3)
+            pass

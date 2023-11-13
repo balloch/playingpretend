@@ -31,7 +31,6 @@ except OSError:
 # logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 # logging.info('We processed %d records', len(processed_records))
 
-
 ## Path to current directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -86,7 +85,8 @@ def main_planner(args):
     When asked for steps or a list, please answer in an enumerated list.
     Only give the answer to the question, do not expound on your answers."""
 
-    creative_system_prompt = """You are a children's story teller and game designer. Be creative but concise."""
+    creative_system_prompt = """You are a children's story teller and game designer. 
+    Be creative but concise."""
 
     theme = 'Find Buried Pirate Treasure'
 
@@ -263,20 +263,26 @@ def main_planner(args):
 
                 # TODO balloch: try ground objects. if no real objects remaining, announce imaginary
                 # TODO balloch: hack, currently skipping all except "possess" and that all objects are "here"
-                if obj_use.verb == 'possess':
+                if obj_use == 'possess':
                     current_task.add_precondition(obj_use,obj)
                     # TODO balloch: design task reuse around "pick"
                     current_task.add_subtask(Task(
                             description=obj_use, # TODO balloch: fix obj_use to differentiate between full response and verb
-                            name= 'pick_'+obj,
-                            effects=[{'possess':obj}],
+                            name='pick_' + obj,
+                            effects=[{'possess': obj}],
                             primitive_fn=ImaginaryAgent.pick_Object))
-                    all_objects[obj]=try_grounding(obj, all_objects)
+                    all_objects[obj] = try_grounding(obj, all_objects)
                 else:
                     pass
-
-
-        ### Locations
+                    new_compound_task = Task(
+                        description=obj_use,
+                        # TODO balloch: fix obj_use to differentiate between full response and verb
+                        name='pick_' + obj,
+                        effects=[{'possess': obj}],
+                    )
+                    task_decomp_stack.append(new_compound_task)
+                    current_task.add_subtask(new_compound_task)
+        ## Locations
         move_tf = qa_ai(f"True or False: it is possible the {the_characters} can successfully '{point}' while staying at {state['loc']}.") # \n context story: \n {story} \n .")
         print('##Unecessary to Move?, ', move_tf)
         if move_tf[0:4] == 'True':
@@ -349,21 +355,21 @@ def main_planner(args):
         str_of_subtasks = grammatical_list_str(current_task.subtasks, 'name')
         print('str_of_subtasks: ', str_of_subtasks)
         deepen_response = qa_ai(f"[Question] \n True or False: it is possible for {the_characters} to successfully '{point}' by only {str_of_subtasks}. [Context] \n story: \n {story}.")
-        if deepen_tf[0:4] == 'True':
+        if deepen_response[0:4] == 'True':
             deepen_tf = True
-        elif deepen_tf[0:5] == 'False':
+        elif deepen_response[0:5] == 'False':
             deepen_tf = False
-        # TODO balloch: add the schema for this question that breaks it down into "Subject" "Verb" "Object"
-        deepen_description = creative_ai(
-            prompt=f"Given the story and the answer {deepen_response} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'"),
-        
-        print('##deepen_subtask, ', deepen_description)
-        deepen_subtask = Task(
-            description=deepen_description,
-            name=deepen_description
-            )
-        current_task.add_subtask(deepen_subtask)
-        task_decomp_stack.append(deepen_subtask)  # Append the subtask to the stack
+            # TODO balloch: add the schema for this question that breaks it down into "Subject" "Verb" "Object"
+            deepen_description = creative_ai(
+                prompt=f"Given the story and the answer {deepen_response} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'"),
+
+            print('##deepen_subtask, ', deepen_description)
+            deepen_subtask = Task(
+                description=deepen_description,
+                name=deepen_description
+                )
+            current_task.add_subtask(deepen_subtask)
+            task_decomp_stack.append(deepen_subtask)  # Append the subtask to the stack
 
         ## TODO: order subtasks
 
@@ -391,7 +397,7 @@ if __name__ == "__main__":
     # set the logger level according to the command line args
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
-    else:
+    if args.debug:
         logging.basicConfig(level=logging.INFO)
     logging.debug('A debug message!')
 
