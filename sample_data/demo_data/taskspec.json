@@ -1,0 +1,74 @@
+{
+  "task_spec":[
+    ["gotolocation_abs",
+    {
+      "?a": "agent1",
+      "?lstart": "loc 1",
+      "?r": "bed 1",
+      "?lend": "loc 19"
+    }], 
+    [
+    "pickupobject_abs",
+    {
+      "?a": "agent1",
+      "?l": "loc 19",
+      "?r": "bed 1",
+      "?o":"cellphone 3"
+    }
+  ],
+  [
+    "gotolocation_abs",
+    {
+      "?a": "agent1",
+      "?lstart": "loc 19",
+      "?r":"garbagecan 1",
+      "?lend":"loc 26"
+    }
+  ],
+  [
+    "gotolocation_abs",
+    {
+      "?a": "agent1",
+      "?lstart": "loc 26",
+      "?r":"desk 1",
+      "?lend":"loc 7"
+    }
+  ],
+  [
+    "putobject_abs",
+    {
+      "?a": "agent1",
+      "?l": "loc 7",
+      "?r":"desk 1",
+      "?o":"cellphone 3"
+    }
+  ],
+  [
+    "gotolocation_abs",
+    {
+      "?a": "agent1",
+      "?lstart": "loc 7",
+      "?r":"shelf 5",
+      "?lend":"loc 15"
+    }
+  ],
+  [
+    "gotolocation_abs",
+    {
+      "?a": "agent1",
+      "?lstart": "loc 15",
+      "?r":"dresser 1",
+      "?lend":"loc 4"
+    }
+  ],
+  [
+    "pickupobject_abs",
+    {
+      "?a": "agent1",
+      "?l": "loc 4",
+      "?r":"dresser 1",
+      "?o":"alarmclock 2"
+    }
+  ]
+]
+}

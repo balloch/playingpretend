@@ -5,7 +5,7 @@
 
 # Project-specific files
 *api_key*
-sample_data/
+#sample_data/
 
 # User-specific files
 *.rsuser
