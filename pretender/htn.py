@@ -1,4 +1,4 @@
-
+from copy import deepcopy
 from typing import List,Any
 from pydantic import BaseModel, Field
 import heapq
@@ -215,9 +215,12 @@ class DecompMethod: #(BaseModel)
 
 
 class HTNPlanner: #(BaseModel)
-    def __init__(self):
+    def __init__(self, tasks=None):
         # super().__init__(**kwargs)
-        self.tasks = {}
+        if tasks is None:
+            self.tasks = {}
+        else:
+            self.tasks = tasks
         self.methods = {}
 
     def add_task(self, task_name, primitive_task):
@@ -228,6 +231,41 @@ class HTNPlanner: #(BaseModel)
 
     def execute_primitive_task(self, task):
         print(f"Executing primitive task: {task}")
+
+    def plan(self, goal_root, initial_state=None, bindings=None):
+        for i, ts in enumerate(task_spec):
+            new_task = deepcopy(real_tasks[ts[0]])
+            new_task.bind_variables(ts[1])
+            goal_root.add_subtask(new_task)
+        goal_root.subtasks[-1].goal = True
+        return goal_root
+
+    def _decompose(self, compound_task):
+        """
+        decompose the compound_task by
+        1. searching through the preconditions and effects of self.tasks to find matches
+        2. rank those matches first by number of preconditions met, second by the task subtree complexity
+        3. greedily recurse the subtree until the task is satisfied (e.g. all precons and effects met)
+        4. Add the abstraction of a new satisfied task to self.tasks
+        **note: there probably should be a flag to search greedily or optimally
+        """
+        P = compound_task.preconditions
+        E = compound_task.effects
+        # search through self.tasks for matches
+        matches = []
+        for task in self.tasks:
+            rank = (len(task.preconditions.intersection(P)), task.size)
+            matches.append((rank, task))
+        matches.sort(key=lambda x: x[0])
+        # recurse greedily through the subtree until the task is satisfied
+        # while not compound_task.satisfied:
+        #     try_match = matches.pop(0)
+        #     if try_match = 
+        
+
+
+
+
 
     def apply_method(self, task, state):
         if task in self.tasks:
@@ -243,6 +281,7 @@ class HTNPlanner: #(BaseModel)
         elif isinstance(task, list):
             for subtask in task:
                 self.apply_task(subtask, state)
+
 
 def primitive_task_a():
     print("Performing primitive task A")

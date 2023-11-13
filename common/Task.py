@@ -32,6 +32,10 @@ class Task:  # (BaseModel)
         self.objects_required = objects_required
         self.primitive_fn = primitive_fn
         self.primitive_const = primitive_const
+        if self.primitive_fn:
+            self.satisfied = True
+        else:
+            self.satisfied = False
         self.root = root
         self.goal = goal
         self.execution_state = 0

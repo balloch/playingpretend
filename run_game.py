@@ -91,18 +91,18 @@ def main_planner(args):
     theme = 'Find Buried Pirate Treasure'
 
     qa_ai = LogicAssistant(
-        model='gpt-3.5-turbo-0613',
+        model=args.model,
         system_prompt=logic_system_prompt,
         save_messages=False,
         api_key=args.api_key, 
-        model_params = {"temperature": 0.0})
+        model_params={"temperature": 0.0})
     creative_ai = CreativeAssistant(
         theme=theme,
-        model='gpt-3.5-turbo-0613',
+        model=args.model,
         system_prompt=creative_system_prompt,
         save_messages=True,
         api_key=args.api_key, 
-        model_params = {"temperature": 0.1})
+        model_params={"temperature": 0.1})
 
     ###########
     ### Initialize story
