@@ -1,2 +1,3 @@
-alfworld_interfacer
+alfworld_server
+common
 pretender

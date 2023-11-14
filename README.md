@@ -46,3 +46,12 @@ Sample Pretender agent script command -
 Sample bruteforce agent script command - 
 ```python ./brute_force.py $ALFWORLD_DATA/json_2.1.1/valid_train/pick_and_place_simple-AlarmClock-None-Desk-307/trial_T20190907_072317_014092/
 ```
+
+## Troubleshooting
+
+### `AssertionError: Invalid DISPLAY :0 - cannot find X server with xdpyinfo`
+
+This is because the DISPLAY value for your X-window is incorrectly set in `alfworld`. Find the correct one by installing `mesa-utils` with `sudo apt install mesa-utils`, and run the command `DISPLAY=:i glxgears` while incrementing `i` until a gears graphic pops up. This is the value of your X-window. Fix it by finding the file `alfworld/alfworld/gen/constants.py` and set `X_DISPLAY=i` where `i` is that glxgears value you found to work.
+
+### `AttributeError: 'dict' object has no attribute 'actions'`
+This error occurs when the environment in which the Pretender agent (like `client_example.py`) doesn't have the `alfworld_server` subdirectory in the PYTHONPATH. Check that this is true with `echo $PYTHONPATH` and add it to your PYTHONPATH with `export PYTHONPATH=$PYTHONPATH:<path-to-playingpretend>/alfworld_server/`.
