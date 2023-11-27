@@ -1,3 +1,5 @@
+import copy
+
 from common.AtomicAction import AtomicAction
 
 class Task:  # (BaseModel)
@@ -116,9 +118,9 @@ class Task:  # (BaseModel)
     def bind_variables(self, binding):
         # TODO : this should be a property/function of predicate class
         if not (set(binding.keys()) == set(self.variables)):
-            print(
-                f'Error, not all values provided. No assignment done. \n Must provide all of the following: {self.variables}')
-            return
+            error = f'Error, not all values provided. No assignment done. \n Must provide all of the following: {self.variables}'
+            print(error)
+            return error
         self.assignments = binding
         self.name = self.name[:-4]
         for key, value in self.assignments.items():
@@ -147,22 +149,31 @@ class Task:  # (BaseModel)
         errors = [[pos for pos in self.preconditions[0] if pos not in state], [neg for neg in self.preconditions[1] if neg in state]]
         return errors
 
-    def apply_effects(self, state, state_change, nav_locations):
+    def sim_apply_effects(self, state, state_change=None, nav_locations=None, warnings=False):
+        new_state = copy.deepcopy(state)
+        new_state, errors = self.apply_effects(new_state, state_change, nav_locations, warnings)
+        return new_state, errors
+
+    def apply_effects(self, state, state_change=None, nav_locations=None, warnings=True):
         errors = [[], []]
         for e_add in self.effects[0]:
             if e_add in state:
-                print(f"Warning: {e_add} already true")
+                errors[0].append(f"Warning: {e_add} already true")
+                if warnings:
+                    print(f"Warning: {e_add} already true")
             else:
                 state.add(e_add)
         for e_rm in self.effects[1]:
             try:
                 state.remove(e_rm)
             except KeyError:
-                print(f"Warning: {e_rm} already not present")
+                errors[1].append(f"Warning: {e_rm} already not present")
+                if warnings:
+                    print(f"Warning: {e_rm} already not present")
+        return state, errors
 
-    def check_effects(self, state, state_change, nav_locations):
+    def check_effects(self, state, state_change=None, nav_locations=None):
         errors = [[ad for ad in self.effects[0] if ad not in state], [rm for rm in self.effects[1] if rm in state]]
-        # return not (len(errors[0]) or len(errors[1])), errors
         return errors
 
     def get_next_prim(self):

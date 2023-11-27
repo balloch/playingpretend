@@ -2,7 +2,9 @@ from copy import deepcopy
 from typing import List,Any
 from pydantic import BaseModel, Field
 import heapq
-
+import itertools
+import functools
+from functools import total_ordering
 
 class Object: #(BaseModel)
     object_coll = {}
@@ -223,6 +225,10 @@ class HTNPlanner: #(BaseModel)
             self.tasks = tasks
         self.methods = {}
 
+        # self.opened = None
+        # self.closed = None
+
+
     def add_task(self, task_name, primitive_task):
         self.tasks[task_name] = primitive_task
 
@@ -233,38 +239,205 @@ class HTNPlanner: #(BaseModel)
         print(f"Executing primitive task: {task}")
 
     def plan(self, goal_root, initial_state=None, bindings=None):
-        for i, ts in enumerate(task_spec):
-            new_task = deepcopy(real_tasks[ts[0]])
-            new_task.bind_variables(ts[1])
-            goal_root.add_subtask(new_task)
-        goal_root.subtasks[-1].goal = True
+        print('Planning...')
+        self.bindings = bindings
+        self._decompose(compound_task=goal_root, init_state=initial_state)
+        # for i, ts in enumerate(task_spec):
+        #     new_task = deepcopy(real_tasks[ts[0]])
+        #     new_task.bind_variables(ts[1])
+        #     goal_root.add_subtask(new_task)
+        # goal_root.subtasks[-1].goal = True
+        print('Done!')
         return goal_root
 
-    def _decompose(self, compound_task):
+    @functools.total_ordering
+    def _decompose(self, compound_task, init_state):
         """
-        decompose the compound_task by
-        1. searching through the preconditions and effects of self.tasks to find matches
-        2. rank those matches first by number of preconditions met, second by the task subtree complexity
-        3. greedily recurse the subtree until the task is satisfied (e.g. all precons and effects met)
-        4. Add the abstraction of a new satisfied task to self.tasks
+        decompose the bound compound_task by A*, memoize visitations if possible.
+        each entry is a tuple of (value, astar_node)
         **note: there probably should be a flag to search greedily or optimally
         """
-        P = compound_task.preconditions
-        E = compound_task.effects
-        # search through self.tasks for matches
-        matches = []
-        for task in self.tasks:
-            rank = (len(task.preconditions.intersection(P)), task.size)
-            matches.append((rank, task))
-        matches.sort(key=lambda x: x[0])
-        # recurse greedily through the subtree until the task is satisfied
-        # while not compound_task.satisfied:
-        #     try_match = matches.pop(0)
-        #     if try_match = 
-        
+
+        # TODO this should be in some utils somewhere
+        class astar_node:
+            def __init__(self, post_bound_state, curr_task, parent_node,dist):
+                self.post_bound_state = post_bound_state
+                self.curr_task = curr_task
+                self.parent_node = parent_node
+                if parent_node is None:
+                    len_parent = 0
+                elif isinstance(parent_node,astar_node):
+                    len_parent = self.parent_node.dist
+                else:
+                    len_parent = len(self.parent_node)
+                self.total_len = len(self.post_bound_state) * len_parent + 1
+                self.dist = dist
+
+            def __eq__(self, other):
+                assert isinstance(other, astar_node)
+                return other.post_bound_state == self.post_bound_state and other.curr_task == self.curr_task and other.parent_node == self.parent_node
+
+            def __lt__(self, other):
+                assert isinstance(other, astar_node)
+                return self.total_len < other.total_len
 
 
+        # goal_state = compound_task.apply_effects(init_state)
+        goal_effects = compound_task.effects
+        goal_reached = False
+        closed = []
+        closed_states = set()
+        opened = [(0, astar_node(init_state, None, None, dist=0))]
+        no_add_flag = False
+        remove_o_idx_flag = -1
+        variable_mismatch_flag = False
 
+        test_step=0
+
+        ##### Heuristics
+        # TODO: make this a function of config
+        # zero heuristic == Djykstra
+        # heuristic = lambda x: 0
+        # base heuristic == precon edit distance
+        heuristic = lambda x: len(compound_task.check_effects(x)[0])
+        # preferred heuristic == variable edit distance
+        # heuristic = lambda x:
+
+        while opened:
+            curr = heapq.heappop(opened)
+            goal_mismatch = compound_task.check_effects(curr[1].post_bound_state)
+            if not any(goal_mismatch):
+                goal_reached = True
+                break
+            for task_name, abs_task in self.tasks.items():
+                if task_name == 'utterance_abs':
+                    continue
+                precon_potentials = []
+                precon_match_list = []
+                precon_variables = {}
+                for precon_idx, precon in enumerate(abs_task.preconditions[0]):
+                    precon_match_list.append(precon[0])
+                    for var_idx in range(1, len(precon)):
+                        if precon[var_idx] not in precon_variables:
+                            precon_variables[precon[var_idx]] = []
+                        precon_variables[precon[var_idx]].append((precon_idx, var_idx))
+                    precon_potentials.append([])
+                # TODO: change to check both positive and negative precons (not urgent)
+                for s in curr[1].post_bound_state:
+                    ## TODO This is really inefficient
+                    # Get all bindable pairs that meet preconditions
+                    if s[0] in precon_match_list:
+                        # if task_name == 'pickupobject_abs':
+                        #     if ('atlocation', 'agent1', 'loc 19') in curr[1].post_bound_state:
+                        #         # if ('objectatlocation', 'cellphone 3', 'loc 19') in curr[1].post_bound_state:
+                        #         print('step2')
+
+                        precon_idx = precon_match_list.index(s[0])
+                        precon_potentials[precon_idx].append(s)
+
+                perms = itertools.product(*precon_potentials)
+                for perm in perms:
+
+                    test_binding = {}
+                    for var, binds in precon_variables.items():
+                        if len(binds) > 1:
+                            if len(set([perm[bind[0]][bind[1]] for bind in binds])) > 1:
+                                # variable mismatch
+                                variable_mismatch_flag = True
+                                break
+                        test_binding[var.strip('{}')] = perm[binds[0][0]][binds[0][1]]
+
+                    if variable_mismatch_flag:
+                        variable_mismatch_flag = False
+                        continue
+                    ### Debugging
+                    # if task_name == 'gotolocation_abs' and test_step<1:
+                    #     if ('receptacleatlocation','bed 1', 'loc 19') in perm:
+                    #         test_step += 1
+                    #         print('step1')
+                    #         print('nodes', len(opened)+len(closed))
+                    # if task_name == 'pickupobject_abs' and test_step<2:
+                    #     if ('atlocation','agent1', 'loc 19') in perm:
+                    #         # if ('objectatlocation','cellphone 3', 'loc 19') in perm:
+                    #         if ('pickupable', 'cellphone 3') in perm:
+                    #             test_step += 1
+                    #             print('nodes', len(opened) + len(closed))
+                    #             print('step2')
+                    # if task_name == 'gotolocation_abs'  and test_step<3:
+                    #     if ('receptacleatlocation', 'desk 1', 'loc 7') in perm:
+                    #         if ('holds','agent1', 'cellphone 3') in curr[1].post_bound_state:
+                    #             test_step += 1
+                    #             print('nodes', len(opened) + len(closed))
+                    #             print('step3')
+                    # if task_name == 'putobject_abs'  and test_step<4:
+                    #     if ('holds','agent1', 'cellphone 3') in perm:
+                    #         if ('atlocation','agent1', 'loc 7') in perm:
+                    #             test_step += 1
+                    #             print('nodes', len(opened) + len(closed))
+                    #             print('step4')
+                    # if task_name == 'gotolocation_abs' and test_step<5:
+                    #     if ('receptacleatlocation', 'dresser 1', 'loc 4') in perm:
+                    #         if ('objectatlocation', 'cellphone 3', 'loc 7') in curr[1].post_bound_state:
+                    #             test_step += 1
+                    #             print('nodes', len(opened) + len(closed))
+                    #             print('step5')
+                    # if task_name == 'pickupobject_abs' and test_step<6:
+                    #     if ('atlocation', 'agent1', 'loc 4') in perm:
+                    #         if ('pickupable', 'alarmclock 2') in perm:
+                    #             if ('objectatlocation', 'cellphone 3', 'loc 7') in curr[1].post_bound_state:
+                    #                 test_step += 1
+                    #                 print('nodes', len(opened) + len(closed))
+                    #                 print('step6+goal')
+    ###
+                    # TODO: would be great if we could check validity without deepcopy
+                    successor_task = deepcopy(abs_task)
+                    bind_errors = successor_task.bind_variables(test_binding)
+                    if bind_errors:
+                        continue
+                    successor_post_state, sim_effects_errors = successor_task.sim_apply_effects(curr[1].post_bound_state)
+                    if any(sim_effects_errors):
+                        continue
+                    if successor_post_state in closed_states:
+                        continue
+                    curr_heur = heuristic(successor_post_state)
+
+                    # TODO how can we do the below more efficiently?
+                    for idx, o in enumerate(opened):
+                        if successor_post_state == o[1].post_bound_state:
+                            if o[1].dist <= (curr[1].dist+1):
+                                no_add_flag = True
+                            else:
+                                # TODO this never hits!
+                                remove_o_idx_flag = idx
+                            break
+
+                    if no_add_flag:
+                        no_add_flag = False
+                        continue
+
+                    # TODO this never hits!
+                    if remove_o_idx_flag > -1:
+                        del opened[remove_o_idx_flag]
+                        remove_o_idx_flag = -1
+
+                    item_data = astar_node(successor_post_state, successor_task, curr[1], curr[1].dist+1)
+                    heapq.heappush(opened, (curr[1].dist + 1 + curr_heur, item_data))
+
+            closed_states.add(frozenset(curr[1].post_bound_state))
+            heapq.heappush(closed, curr)
+
+        if goal_reached == True:
+            # print('nodes', len(opened) + len(closed))
+            # print('goal')
+            par_task = curr[1]
+            while par_task.curr_task is not None:
+                compound_task.subtasks.insert(0, par_task.curr_task)
+                par_task = par_task.parent_node
+            if compound_task.goal:
+                compound_task.subtasks[-1].goal = True
+        else:
+            print("No solution found")
+            raise NotImplementedError
 
 
     def apply_method(self, task, state):

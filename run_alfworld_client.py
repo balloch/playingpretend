@@ -41,8 +41,17 @@ parser.add_argument('--demo_files', type=str, default='sample_data/demo_data', h
 def main(args):
     ## Fill truth table state
     init = get_initial_state()
-    real_objects = [obj for objname, obj in init.objects.items() if obj.current_location is not None]
-    real_receptacles = init.receptacles
+    real_objects = {}
+    real_receptacles = {}
+    for _, obj in init.objects.items():
+        if obj.current_location is not None:
+            if obj.name is None:
+                print('Warning: unnamed object:', obj)
+                continue
+            real_objects[obj.name] = obj
+    for _, recept in init.receptacles.items():
+        if recept.current_location is not None:
+            real_receptacles[recept.name] = recept
     truth_state, nav_locations = process_init(init)
 
     ## Primitive tasks, initialized with utterance
@@ -64,9 +73,10 @@ def main(args):
     ## Create planner root from goal
     real_root = Task(
         name='FindAlarmClockWithCellphone',
-        preconditions=[
+        effects=[[
             ('objectatlocation', 'cellphone 3', 'loc 7'),
-            ('holding', 'alarmclock 2')
+            ('holds', 'agent1', 'alarmclock 2')],
+            []
         ],
         root=True,
         goal=True
@@ -86,12 +96,14 @@ def main(args):
             real_root.add_subtask(new_task)
         real_root.subtasks[-1].goal = True
     else:
-         real_root = real_planner.plan(goal_root=real_root,
-                                       bindings={'o':real_objects,
-                                                 'r':real_receptacles,
-                                                 'l':nav_locations})
+        real_root = real_planner.plan(goal_root=real_root,
+                                      initial_state=truth_state,
+                                      bindings={'o': real_objects,
+                                                'r': real_receptacles,
+                                                'l': nav_locations})
 
-
+        with open(os.path.join(args.demo_files, 'imaginary.json'), 'r') as f:
+            printstory = json.load(f)['printstory']
 
     ## Execute Plan
     goal = False
