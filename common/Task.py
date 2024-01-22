@@ -14,11 +14,34 @@ class Task:  # (BaseModel)
     If not, it iteratively calls the functions of its subtasks.
     """
 
-    def __init__(self, name, preconditions=[[], []], variables=None, expected_start_location=None,
-                 expected_visit_location=[],
-                 objects_required=[], primitive_fn=None, primitive_const={}, subtasks=[], effects=[], root=False,
-                 goal=False):
+    def __init__(self, name,
+                 preconditions=None,
+                 variables=None,
+                 expected_start_location=None,
+                 expected_visit_location=None,
+                 objects_required=None,
+                 primitive_fn=None,
+                 primitive_const=None,
+                 subtasks=None,
+                 effects=None,
+                 root=False,
+                 goal=False,
+                 real=True,
+                 depth=-1,
+                 grounding=None):
         # super().__init__(**kwargs)
+        if preconditions is None:
+            preconditions = [[], []]
+        if effects is None:
+            effects = []
+        if subtasks is None:
+            subtasks = []
+        if primitive_const is None:
+            primitive_const = {}
+        if objects_required is None:
+            objects_required = []
+        if expected_visit_location is None:
+            expected_visit_location = []
         self.name = name
         self.preconditions = preconditions
         self.effects = effects
@@ -40,6 +63,11 @@ class Task:  # (BaseModel)
             self.satisfied = False
         self.root = root
         self.goal = goal
+        self.real = real
+        self.depth = depth
+        self.grounding = grounding
+
+        # For internal use
         self.execution_state = 0
 
     def add_subtask(self, subtask):
@@ -114,7 +142,6 @@ class Task:  # (BaseModel)
 
         self.primitive_const = {'command': atomic.command_template}
 
-
     def bind_variables(self, binding):
         # TODO : this should be a property/function of predicate class
         if not (set(binding.keys()) == set(self.variables)):
@@ -143,7 +170,6 @@ class Task:  # (BaseModel)
         self.effects = new_effects
         for key in self.primitive_const.keys():
             self.primitive_const[key] = self.primitive_const[key].format(**self.assignments)
-
 
     def check_precons(self, state):
         errors = [[pos for pos in self.preconditions[0] if pos not in state], [neg for neg in self.preconditions[1] if neg in state]]
@@ -196,6 +222,14 @@ class Task:  # (BaseModel)
                 self.execution_state += 1
             return subtask.execute_next(state, **kwds)
             # e.extend(subtask(state, **kwds))
+
+    def reorder_subtasks(self, str_order):
+        list_order = str_order.strip().split(',')
+        list_order = [int(elem.strip()) for elem in list_order]
+        list_min = min(list_order)
+        list_order = [elem-list_min for elem in list_order]
+        order = {v: i for i, v in enumerate(list_order)}
+        self.subtasks = sorted(self.subtasks, key=lambda x: order[x[0]])
 
     def __call__(self, state, **kwds):
         # If primitive, this is an operator that has some effect on the world

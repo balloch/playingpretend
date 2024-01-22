@@ -32,7 +32,7 @@ except OSError:
 # logging.info('We processed %d records', len(processed_records))
 
 ## Path to current directory
-current_dir = os.path.dirname(os.path.abspath(__file__))
+file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 parser = argparse.ArgumentParser(description='Run the game')
@@ -403,17 +403,18 @@ if __name__ == "__main__":
 
     ## ensure api key
     if args.api_key is None:
-        api_file_path = os.path.join(current_dir, 'utils/api_key.txt')
+        api_file_path = os.path.join(file_dir, 'pretender/utils/api_key.txt')
         if "OPENAI_API_KEY" in os.environ and len(os.environ["OPENAI_API_KEY"]) > 0:
             args.api_key = os.environ["OPENAI_API_KEY"]
         elif os.path.exists(api_file_path) and os.path.getsize(api_file_path) > 0:
             with open(api_file_path, 'r') as f:
                 args.api_key = f.read()  
         elif args.input_allowed is True:  # TODO balloch: do better here
-            args.api_key = getpass("Please enter your API key: ")
+            args.api_key = getpass("Please enter your API key: ")  # This isn't hitting
         else:
             raise ValueError("Must provide OpenAI API key")
-    
+        args.api_key = args.api_key.strip()  # sometimes weird hidden chars
+
     #############
     ### Run the story planner
     #############

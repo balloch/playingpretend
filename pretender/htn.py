@@ -298,9 +298,9 @@ class HTNPlanner: #(BaseModel)
         # TODO: make this a function of config
         # zero heuristic == Djykstra
         # heuristic = lambda x: 0
-        # base heuristic == precon edit distance
+        # base heuristic == full precon edit distance
         heuristic = lambda x: len(compound_task.check_effects(x)[0])
-        # preferred heuristic == variable edit distance
+        # preferred heuristic == precon parameter edit distance
         # heuristic = lambda x:
 
         while opened:
