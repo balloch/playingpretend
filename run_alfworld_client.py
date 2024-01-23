@@ -21,7 +21,8 @@ from pretender.templates.gen_prompts import (logic_system_prompt,
                                              creative_system_prompt)
 from pretender.templates.func_prompts import f_prompt, known_f_prompts
 from pretender.test.dummy_api import ImaginaryAgent
-from services.create_universe.create_universe_from_server import create_universe
+from services.create_universe.create_real_universe_from_server import create_universe as create_real_universe
+from services.create_universe.create_imaginary_universe_from_theme import ImaginaryUniverseCreator
 
 ## Path to current directory
 file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -243,59 +244,17 @@ def imagine_decomp(story, qa_ai, creative_ai, task_decomp_stack, root, character
     return root
 
 
-def imagine(args):
-    theme = args.theme
-
-    qa_ai = LogicAssistant(
-        model=args.model,
-        system_prompt=logic_system_prompt,
-        save_messages=False,
-        api_key=args.api_key,
-        model_params={"temperature": 0.0})
-    creative_ai = CreativeAssistant(
-        theme=theme,
-        model=args.model,
-        system_prompt=creative_system_prompt,
-        save_messages=True,
-        api_key=args.api_key,
-        model_params={"temperature": 0.1})
-
+def imagine(args, qa_ai, creative_ai):
     ###########
     ### Initialize story
     ###########
-
-    story = creative_ai(
-        f"Write a short story featuring two friends, Astro and Playmate, about {theme} that a 5 year old would understand and enjoy")
-    print('story, ', story)
-
-    gen_loc = qa_ai(
-        f"Given the story {story}, where does the story take place? If you can't tell from the story, just say 'Location Name: The story world' \n Example: 'Location Name: <example name>' ")
-    gen_loc = gen_loc.replace('Location Name:', '').strip()
-    print('##gen_loc?, ', gen_loc)
-
-    # story_init_loc = qa_ai(f"Given the story '{story}' \n that takes place in {gen_loc}, what specific location within {gen_loc} where the characters most likely begin the story, before they {theme}. Only answer with the Location Name. \n Example: 'Location Name: <example_location_inside_{gen_loc}>'")
-    story_init_loc = creative_ai(
-        f"Given the story which takes place in {gen_loc}, what specific location within {gen_loc} are the characters most likely begin the story, before they {theme}? Only answer with the Location Name. \n Example: 'Location Name: <example_location_inside_{gen_loc}>'")
-    # story_init_loc = story_init_loc.split('\n')
-    story_init_loc = story_init_loc.replace('Location Name:', '').strip()
-    print('##story init loc, ', story_init_loc)
-
-    story_points = qa_ai(
-        f"Given the story {story}, only using sentences with one clause list the five most important actions the characters made in the story to {theme}.")  # Use proper nouns instead of pronouns wherever possible")
-    story_points_list = tidy_llm_list_string(story_points)
-    story_point_list_present = [qa_ai(f"Convert the following sentence to present tense: {point}") for point in
-                                story_points_list]
-
-    # TODO: automatically detect this
-    characters = ['Astro', 'Playmate']
-    # print('the_characters: ', the_characters)
-    # print('##story_point_list_present, ', story_point_list_present)
-    # print('##story_points, ', story_points_list)
+    imaginary_universe_creator = ImaginaryUniverseCreator(qa_ai, creative_ai)
+    imaginary_universe = imaginary_universe_creator.create_universe(args.theme)
 
     # Init tasks
     imag_root = Task(
-        name=theme,
-        expected_start_location=story_init_loc,
+        name=args.theme,
+        expected_start_location=imaginary_universe.initial_location,
         expected_visit_location=[],
         objects_required=None,
         primitive_fn=None,
@@ -313,7 +272,7 @@ def imagine(args):
     # state = {'time': 0, 'loc': story_init_loc, }  # 'loc_type':story_init_loc[1],}
     # print('##state, ', state)
 
-    curr_loc = story_init_loc
+    curr_loc = imaginary_universe.initial_location
 
     #############
     ### Initialize the task stack
@@ -343,13 +302,27 @@ def imagine(args):
 
 
 def main(args):
+    qa_ai = LogicAssistant(
+        model=args.model,
+        system_prompt=logic_system_prompt,
+        save_messages=False,
+        api_key=args.api_key,
+        model_params={"temperature": 0.0})
+    creative_ai = CreativeAssistant(
+        theme=args.theme,
+        model=args.model,
+        system_prompt=creative_system_prompt,
+        save_messages=True,
+        api_key=args.api_key,
+        model_params={"temperature": 0.1})
+
     ## Fill truth table state
     init_state = get_initial_state()
-    real_universe = create_universe(init_state, perform_action)
+    real_universe = create_real_universe(init_state, perform_action)
 
     real_planner = HTNPlanner(tasks=real_universe.tasks)
 
-    imag_plan = imagine(args)
+    imag_plan = imagine(args, qa_ai, creative_ai)
 
     ## Create planner root from goal
     real_root = Task(
@@ -370,7 +343,7 @@ def main(args):
 
         with open(os.path.join(args.demo_files, 'imaginary.json'), 'r') as f:
             printstory = json.load(f)['printstory']
-# this real variables are maps
+        # this real variables are maps
         for i, ts in enumerate(task_spec):
             new_task = deepcopy(real_tasks[ts[0]])
             new_task.bind_variables(ts[1])
