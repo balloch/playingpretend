@@ -9,11 +9,9 @@ import jsonpickle
 import bidict
 from getpass import getpass
 
-
 from alfworld_server.client_tools import get_initial_state, perform_action
 from common.Task import Task
-from common.Location import Location
-from common.Receptacle import Receptacle
+
 from pretender.htn import HTNPlanner
 from pretender.assistants import LogicAssistant, CreativeAssistant
 from pretender.utils.llm_utils import tidy_llm_list_string, grammatical_list_str
@@ -23,11 +21,10 @@ from pretender.templates.gen_prompts import (logic_system_prompt,
                                              creative_system_prompt)
 from pretender.templates.func_prompts import f_prompt, known_f_prompts
 from pretender.test.dummy_api import ImaginaryAgent
-
+from services.create_universe.create_universe_from_server import create_universe
 
 ## Path to current directory
 file_dir = os.path.dirname(os.path.abspath(__file__))
-
 
 parser = argparse.ArgumentParser(description='Run the game')
 parser.add_argument('--api_key', type=str, default=None, help='OpenAI API key')
@@ -44,7 +41,8 @@ parser.add_argument('--demo_files', type=str, default='sample_data/demo_data', h
 parser.add_argument('--theme', type=str, default='Find Buried Pirate Treasure', help='theme of the story')
 
 
-def change_location_tasks(current_task, point, qa_ai, creative_ai, characters, the_characters, task_decomp_stack, curr_loc):
+def change_location_tasks(current_task, point, qa_ai, creative_ai, characters, the_characters, task_decomp_stack,
+                          curr_loc):
     move_tf = qa_ai(f_prompt(prompt_in='tf_change_loc', point=point, loc=curr_loc, the_characters=the_characters))
     if move_tf[0:4] == 'True':
         move_tf = True
@@ -246,7 +244,6 @@ def imagine_decomp(story, qa_ai, creative_ai, task_decomp_stack, root, character
 
 
 def imagine(args):
-
     theme = args.theme
 
     qa_ai = LogicAssistant(
@@ -286,7 +283,8 @@ def imagine(args):
     story_points = qa_ai(
         f"Given the story {story}, only using sentences with one clause list the five most important actions the characters made in the story to {theme}.")  # Use proper nouns instead of pronouns wherever possible")
     story_points_list = tidy_llm_list_string(story_points)
-    story_point_list_present = [qa_ai(f"Convert the following sentence to present tense: {point}") for point in story_points_list]
+    story_point_list_present = [qa_ai(f"Convert the following sentence to present tense: {point}") for point in
+                                story_points_list]
 
     # TODO: automatically detect this
     characters = ['Astro', 'Playmate']
@@ -344,79 +342,12 @@ def imagine(args):
     return story_point_list_present
 
 
-def process_init(init):
-    truth = set()
-
-    ## locate receptacles
-    recept_loc_ref = {}
-
-    def recurse_recept_loc(receptacle):
-        if isinstance(receptacle.current_location, Location):
-            return receptacle.current_location
-        elif isinstance(receptacle.current_location, Receptacle):
-            return recurse_recept_loc(receptacle.current_location)
-        else:
-            raise ValueError('current_location should only be a location or a receptacle')
-
-    for recept in init.receptacles.values():
-        loc = recurse_recept_loc(recept)
-        recept_loc_ref[recept.name.strip()] = loc.name.strip()
-        truth.add(('receptacleatlocation', recept.name.strip(), loc.name.strip()))
-
-    # recept_loc_ref = bidict(recept_loc_ref)
-
-    # TODO : for all objects except 'agent1' add 'inreceptacle' predicate where appropriate
-    for objname, obj in init.objects.items():
-        # objectAtLocation
-        if obj.current_location is None:
-            continue
-        truth.add(('pickupable', obj.name.strip()))
-        if isinstance(obj.current_location, Location):
-            if objname == 'agent1':
-                truth.add(('atlocation', 'agent1', obj.current_location.name))
-                continue
-            truth.add(('objectatlocation', obj.name.strip(), obj.current_location.name.strip()))
-        elif isinstance(obj.current_location, Receptacle):
-            try:
-                truth.add(
-                    ('objectatlocation', obj.name.strip(), recept_loc_ref[obj.current_location.name.strip()]))
-            except KeyError:
-                print(f"skipping {obj.name}; no listed receptacle {obj.current_location.name}")
-        else:
-            raise ValueError('current_location should only be a location or a receptacle')
-    return truth, recept_loc_ref
-
-
 def main(args):
     ## Fill truth table state
-    init = get_initial_state()
-    real_objects = {}
-    real_receptacles = {}
-    for _, obj in init.objects.items():
-        if obj.current_location is not None:
-            if obj.name is None:
-                print('Warning: unnamed object:', obj)
-                continue
-            real_objects[obj.name] = obj
-    for _, recept in init.receptacles.items():
-        if recept.current_location is not None:
-            real_receptacles[recept.name] = recept
-    truth_state, nav_locations = process_init(init)
+    init_state = get_initial_state()
+    real_universe = create_universe(init_state, perform_action)
 
-    ## Primitive tasks, initialized with utterance
-    # real_tasks = init.actions
-    real_tasks = {'utterance_abs': Task(
-        name='utterance_abs',
-        primitive_fn=print,
-    )
-    }
-
-    for action in init.actions:
-        real_tasks[action.id+'_abs'] = Task(name=action.id+'_abs')
-        real_tasks[action.id+'_abs'].from_atomic(atomic=action,
-                                                 function=perform_action)
-
-    real_planner = HTNPlanner(tasks=real_tasks)
+    real_planner = HTNPlanner(tasks=real_universe.tasks)
 
     imag_plan = imagine(args)
 
@@ -434,12 +365,12 @@ def main(args):
 
     ## Simulate planner & variable binding
     if args.demo == 'static':
-        with open(os.path.join(args.demo_files,'taskspec.json'), 'r') as f:
+        with open(os.path.join(args.demo_files, 'taskspec.json'), 'r') as f:
             task_spec = json.load(f)['task_spec']
 
-        with open(os.path.join(args.demo_files,'imaginary.json'), 'r') as f:
+        with open(os.path.join(args.demo_files, 'imaginary.json'), 'r') as f:
             printstory = json.load(f)['printstory']
-
+# this real variables are maps
         for i, ts in enumerate(task_spec):
             new_task = deepcopy(real_tasks[ts[0]])
             new_task.bind_variables(ts[1])
@@ -462,7 +393,7 @@ def main(args):
         goal = curr_task.goal
         plan_errors = curr_task.check_precons(truth_state)
         if not any(plan_errors):
-            response = real_root.execute_next(truth_state) #, command="go to desk 1")
+            response = real_root.execute_next(truth_state)  # , command="go to desk 1")
             history.append(response)
             curr_task.apply_effects(state=truth_state, state_change=history[-1], nav_locations=nav_locations)
             plan_errors = curr_task.check_effects(state=truth_state, state_change=history[-1],
@@ -490,9 +421,7 @@ def main(args):
             pass
 
 
-if __name__ == "__main__":
-    args = parser.parse_args()
-
+def process_args(args):
     # ensure api key
     if args.api_key is None:
         api_file_path = os.path.join(file_dir, 'pretender/utils/api_key.txt')
@@ -506,5 +435,9 @@ if __name__ == "__main__":
         else:
             raise ValueError("Must provide OpenAI API key")
         args.api_key = args.api_key.strip()  # sometimes weird hidden chars
+    return args
 
+
+if __name__ == "__main__":
+    args = process_args(parser.parse_args())
     main(args)

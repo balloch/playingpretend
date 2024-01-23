@@ -224,9 +224,9 @@ class ImageGameDemo:
         self.current_image = pygame.transform.scale(self.current_image, (self.screen_width, self.screen_height))
 
         # Load button sample_data
-        forward_img = pygame.image.load('forward_button.jpg')  # Provide your button image paths
-        left_img = pygame.image.load('left_button.jpg')
-        right_img = pygame.image.load('right_button.jpg')
+        forward_img = pygame.image.load('unprocessed/forward_button.jpg')  # Provide your button image paths
+        left_img = pygame.image.load('unprocessed/left_button.jpg')
+        right_img = pygame.image.load('unprocessed/right_button.jpg')
 
         # Resize button sample_data
         self.button_width, self.button_height = 50, 50
