@@ -3,10 +3,11 @@ from graphviz import Digraph
 from pretender.htn import Task
 
 
-def visualize_task_tree(root_task):
+def visualize_task_tree(root_task, end_early=False):
     dot = Digraph(comment="Task Tree")
     stack = [(root_task, None)]  # Use a stack for depth-first traversal
 
+    nodes_processed = 0
     while stack:
         task, parent_id = stack.pop()
         task_id = id(task)
@@ -18,6 +19,10 @@ def visualize_task_tree(root_task):
 
         for subtask in task.subtasks:
             stack.append((subtask, task_id))
+
+        nodes_processed += 1
+        if end_early and nodes_processed >30:
+            break
 
     return dot
 
