@@ -69,19 +69,18 @@ How to determine when to decompose creative? based on perceived time:
     - if LLM thinks it will take a short time (enter cave, a spell that was casted), then by rule autoassociate-with "Say" e.g. astro says "I casted a magic missile"
 """
 
-
-def main_planner(args):
+def get_ai_agents():
     system_prompt = """You are a helpful assistant. You keep your answers brief. 
-    When asked for steps or a list you answer with an enumerated list. 
-    Only give the answer to the question, do not expound on your answers."""
+        When asked for steps or a list you answer with an enumerated list. 
+        Only give the answer to the question, do not expound on your answers."""
 
     logic_system_prompt = """This is a logical, common sense, question answering task.
-    Your job is to answer questions as simply and correctly as possible.
-    When asked for steps or a list, please answer in an enumerated list.
-    Only give the answer to the question, do not expound on your answers."""
+        Your job is to answer questions as simply and correctly as possible.
+        When asked for steps or a list, please answer in an enumerated list.
+        Only give the answer to the question, do not expound on your answers."""
 
     creative_system_prompt = """You are a children's story teller and game designer. 
-    Be creative but concise."""
+        Be creative but concise."""
 
     theme = 'Find Buried Pirate Treasure'
 
@@ -99,10 +98,9 @@ def main_planner(args):
         api_key=args.api_key,
         model_params={"temperature": 0.1})
 
-    ###########
-    ### Initialize story
-    ###########
+    return qa_ai, creative_ai
 
+def get_story_elements(qa_ai, creative_ai):
     speedup = True
 
     if not speedup:
@@ -135,45 +133,42 @@ def main_planner(args):
     else:
         story = '''Once upon a time, in a small coastal town, there were two best friends named Astro and Playmate. They loved going on adventures together and exploring the world around them. One sunny day, as they were playing on the beach, they stumbled upon an old, tattered map buried in the sand.
 
-Excitedly, Astro and Playmate unfolded the map and saw that it led to a hidden treasure buried by pirates long ago. Their eyes sparkled with excitement as they imagined all the gold coins and shiny jewels they could find. They decided to embark on a treasure hunt, just like the brave pirates of old.
+    Excitedly, Astro and Playmate unfolded the map and saw that it led to a hidden treasure buried by pirates long ago. Their eyes sparkled with excitement as they imagined all the gold coins and shiny jewels they could find. They decided to embark on a treasure hunt, just like the brave pirates of old.
 
-Following the map's clues, Astro and Playmate ventured into the dense forest, where they encountered tall trees and chirping birds. They walked for what felt like hours until they reached a clearing with a big, old tree in the center. The map indicated that the treasure was buried beneath it.
+    Following the map's clues, Astro and Playmate ventured into the dense forest, where they encountered tall trees and chirping birds. They walked for what felt like hours until they reached a clearing with a big, old tree in the center. The map indicated that the treasure was buried beneath it.
 
-With their little shovels in hand, Astro and Playmate started digging eagerly. The soil was soft, and they could feel their hearts racing with anticipation. As they dug deeper, they discovered a wooden chest buried beneath the tree's roots. It was covered in moss and looked ancient.
+    With their little shovels in hand, Astro and Playmate started digging eagerly. The soil was soft, and they could feel their hearts racing with anticipation. As they dug deeper, they discovered a wooden chest buried beneath the tree's roots. It was covered in moss and looked ancient.
 
-Astro and Playmate carefully opened the chest, and their eyes widened with wonder. Inside, they found not just gold coins and jewels, but also a collection of colorful seashells, a beautiful mermaid figurine, and a handwritten letter from the pirates themselves. The letter told the story of their adventures and how they wanted someone special to find their treasure.
+    Astro and Playmate carefully opened the chest, and their eyes widened with wonder. Inside, they found not just gold coins and jewels, but also a collection of colorful seashells, a beautiful mermaid figurine, and a handwritten letter from the pirates themselves. The letter told the story of their adventures and how they wanted someone special to find their treasure.
 
-Astro and Playmate were overjoyed. They knew they had found something truly magical. They decided to share their discovery with the whole town, spreading joy and excitement to everyone. The treasure became a symbol of friendship and the power of imagination.
+    Astro and Playmate were overjoyed. They knew they had found something truly magical. They decided to share their discovery with the whole town, spreading joy and excitement to everyone. The treasure became a symbol of friendship and the power of imagination.
 
-From that day on, Astro and Playmate became known as the brave adventurers who found the buried pirate treasure. They were celebrated by the townspeople, who were inspired by their courage and kindness. The treasure was displayed in the town's museum, reminding everyone of the importance of dreams and the joy of discovery.
+    From that day on, Astro and Playmate became known as the brave adventurers who found the buried pirate treasure. They were celebrated by the townspeople, who were inspired by their courage and kindness. The treasure was displayed in the town's museum, reminding everyone of the importance of dreams and the joy of discovery.
 
-Astro and Playmate continued to go on many more adventures together, exploring the world around them and making memories that would last a lifetime. And whenever they looked at the treasure, they were reminded of the magical day they found buried pirate treasure and the power of friendship that made it all possible.'''
+    Astro and Playmate continued to go on many more adventures together, exploring the world around them and making memories that would last a lifetime. And whenever they looked at the treasure, they were reminded of the magical day they found buried pirate treasure and the power of friendship that made it all possible.'''
 
         gen_loc = 'The small coastal town'
 
         story_init_loc = 'Beach'
 
         story_points = '''1. Astro and Playmate stumbled upon an old, tattered map buried in the sand.
-2. They unfolded the map and decided to embark on a treasure hunt.
-3. Following the map's clues, they ventured into the dense forest.
-4. They dug beneath the big, old tree in the clearing, where the treasure was indicated to be buried.
-5. Astro and Playmate carefully opened the wooden chest they found and discovered the hidden treasure inside.'''
+    2. They unfolded the map and decided to embark on a treasure hunt.
+    3. Following the map's clues, they ventured into the dense forest.
+    4. They dug beneath the big, old tree in the clearing, where the treasure was indicated to be buried.
+    5. Astro and Playmate carefully opened the wooden chest they found and discovered the hidden treasure inside.'''
         story_points_list = tidy_llm_list_string(story_points)
 
         creative_story_points = '''1. Astro and Playmate stumbled upon an old, tattered map buried in the sand while playing on the beach.
-2. They unfolded the map and discovered that it led to a hidden treasure buried by pirates long ago.
-3. Astro and Playmate followed the map's clues and ventured into the dense forest, encountering tall trees and chirping birds.
-4. They reached a clearing with a big, old tree in the center, where the map indicated the treasure was buried.
-5. With their little shovels in hand, Astro and Playmate eagerly dug beneath the tree's roots and discovered a wooden chest filled with treasure.'''
+    2. They unfolded the map and discovered that it led to a hidden treasure buried by pirates long ago.
+    3. Astro and Playmate followed the map's clues and ventured into the dense forest, encountering tall trees and chirping birds.
+    4. They reached a clearing with a big, old tree in the center, where the map indicated the treasure was buried.
+    5. With their little shovels in hand, Astro and Playmate eagerly dug beneath the tree's roots and discovered a wooden chest filled with treasure.'''
         creative_story_points_list = tidy_llm_list_string(creative_story_points)
 
-    ###########
-    ### Initialize planning info
-    ###########
-    init_robot_loc = 0
-    robot_api = RobotAPI(init_robot_loc)
+    return story, gen_loc, story_init_loc, story_points_list
+
+def get_imaginary_tasks():
     im_agent = ImaginaryAgent(story_init_loc)
-    ## Start with a list of lists, then turn into a
 
     real_tasks = []
     imaginary_tasks = []
@@ -202,12 +197,22 @@ Astro and Playmate continued to go on many more adventures together, exploring t
     print(real_tasks)
     print(imaginary_tasks)
 
+    return imaginary_tasks
+
+def init_object_locations():
     for obj, loc in real_object_map.items():
         name = obj.rstrip('1234567890_').replace('_', ' ')
         print(name)
         Object(name, loc)
 
     print(Object.object_coll)
+def main_planner(args):
+    qa_ai, creative_ai = get_ai_agents()
+
+    story, gen_loc, story_init_loc, story_points_list = get_story_elements(qa_ai, creative_ai)
+
+    imaginary_tasks = get_imaginary_tasks()
+
     story_tree = Task(
         description=story,
         name=theme,
@@ -221,8 +226,6 @@ Astro and Playmate continued to go on many more adventures together, exploring t
 
     ## TODO: automatically detect this 
     characters = ['Astro', 'Playmate']
-    the_characters = grammatical_list_str(characters)
-    print('the_characters: ', the_characters)
 
     ############
     ### Decompose story points
@@ -255,75 +258,81 @@ Astro and Playmate continued to go on many more adventures together, exploring t
             description=point,
             preconditions={'start_loc': curr_loc})
         curr_root.subtasks.append(sp_task)
-        curr_task = decom
+        curr_task = decompose(qa_ai, creative_ai, characters, sp_task, level=1)
 
     ############
     ### Main Planner Loop
     ############
 
-def decompose(current_task):
-    current_task = task_decomp_stack[-1]
-    if current_task.visited_planner:
-        imaginary_tasks.append(current_task)
-        task_decomp_stack.pop()
-        continue
+def get_physical_objects(qa_ai, sentence, characters):
+    objects = qa_ai(
+        f"List the physical objects referenced in the sentence. \n [Example] \n Sentence: 'Do research and find evidence or maps that lead to the treasures whereabouts' \n Objects: 1. evidence \n 2. map \n 2. treasure. \n [Query] \n Sentence: '{point}' \n Objects: ")
+    objects = tidy_llm_list_string(objects)
+
+    ## Ensure no characters:
+    for ch in characters:
+        if ch in objects:
+            objects.remove(ch)
+
+    return objects
+
+def decompose(qa_ai, creative_ai, characters, current_task, level=0):
+    # TODO: not sure what this is for
+    # if current_task.visited_planner:
+    #     imaginary_tasks.append(current_task)
+    #     task_decomp_stack.pop()
+    #     continue
 
     # Check primitives i.e. if they have to possess something to do this story point
     #############
     ##### Primitive Decomps:
     #############
-    print('##point, ', point)
+    current_task_description = current_task.description
 
     ### Objects
-    get_objects = qa_ai(
-        f"List the physical objects referenced in the sentence. \n [Example] \n Sentence: 'Do research and find evidence or maps that lead to the treasures whereabouts' \n Objects: 1. evidence \n 2. map \n 2. treasure. \n [Query] \n Sentence: '{point}' \n Objects: ")
-    get_objects = tidy_llm_list_string(get_objects)
+    objects = get_physical_objects(qa_ai, current_task_description, characters)
 
-    ## Ensure no characters:
-    for ch in characters:
-        if ch in get_objects:
-            get_objects.remove(ch)
+    characters_str = grammatical_list_str(characters)
 
-    print('##get_objects, ', get_objects)
-    # need_item_tf = qa_ai(f"True or False: In the story: \n {story} \n is it necessary to 'have' {get_objects} to {point_present}?")
-    # need_item_tf = qa_ai(f"In the story: \n {story} \n For the characters to {point_present} what physical items are necessary besides {get_objects}?")  ## Doesn't work tooo complex
-    current_task.objects_required = get_objects
+
+    print('##get_objects, ', objects)
+    current_task.objects_required = objects
     obj_uses = []
-    if len(get_objects) > 0:
-        for obj in get_objects:
+    if len(objects) > 0:
+        for object in objects:
             obj_possess_tf = qa_ai(
-                f"True or False: In the sentence '{point}',  {the_characters} need to possessed or acquired {obj} to use it. ")
-            print('###', obj, "possessed or acquired: ", obj_possess_tf)
+                f"True or False: In the sentence '{current_task_description}',  {characters_str} need to possess or acquire {object} to use it. ")
+            print('###', object, "possessed or acquired: ", obj_possess_tf)
             obj_use = qa_ai(
-                f"What one-word action best describes how {the_characters} use or interact with {obj} in '{point}'? If it is enough that {the_characters} simply have {obj} then say 'possess'.")
-            print('###', obj, "how used: ", obj_use)
+                f"What one-word action best describes how {characters_str} use or interact with {object} in '{current_task_description}'? If it is enough that {characters_str} simply have {object} then say 'possess'.")
+            print('###', object, "how used: ", obj_use)
             obj_uses.append(obj_use)
 
             # TODO balloch: try ground objects. if no real objects remaining, announce imaginary
             # TODO balloch: hack, currently skipping all except "possess" and that all objects are "here"
             if obj_use == 'possess':
-                current_task.add_precondition(obj_use, obj)
+                current_task.add_precondition(obj_use, object)
                 # TODO balloch: design task reuse around "pick"
                 current_task.add_subtask(Task(
                     description=obj_use,
                     # TODO balloch: fix obj_use to differentiate between full response and verb
-                    name='pick_' + obj,
-                    effects=[{'possess': obj}],
+                    name='pick_' + object,
+                    effects=[{'possess': object}],
                     primitive_fn=ImaginaryAgent.pick_Object))
-                all_objects[obj] = try_grounding(obj, all_objects)
+                all_objects[object] = try_grounding(object, all_objects)
             else:
                 pass
                 new_compound_task = Task(
                     description=obj_use,
                     # TODO balloch: fix obj_use to differentiate between full response and verb
-                    name='pick_' + obj,
-                    effects=[{'possess': obj}],
+                    name='pick_' + object,
+                    effects=[{'possess': object}],
                 )
                 task_decomp_stack.append(new_compound_task)
                 current_task.add_subtask(new_compound_task)
     ## Locations
     move_tf = qa_ai(
-        f"True or False: it is possible the {the_characters} can successfully '{point}' while staying at {state['loc']}.")  # \n context story: \n {story} \n .")
+        f"True or False: it is possible the {characters_str} can successfully '{current_task_description}' while staying at {state['loc']}.")  # \n context story: \n {story} \n .")
     print('##Unecessary to Move?, ', move_tf)
     if move_tf[0:4] == 'True':
         move_tf = True
@@ -341,11 +350,11 @@ def decompose(current_task):
             del creative_ai.llm.default_session.messages[-1]  # TODO balloch: this is a hack make more general
             print(attempt)
             new_loc = qa_ai(
-                f"In the context of the story {story}, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more. ")  # [Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
+                f"In the context of the story {story}, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {current_task_description}? Only respond with the list of location names, nothing more. ")  # [Example]'Location Name: <example_location>'") ### TODO balloch: may need creative ai
             print('##next_loc?, ', new_loc)
             if False:
                 creative_loc = creative_ai(
-                    f"Given the story, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {point}? Only respond with the list of location names, nothing more")
+                    f"Given the story, what are the places within {gen_loc} where the characters would most likely need to travel from {state['loc']} to {current_task_description}? Only respond with the list of location names, nothing more")
                 print('##creative_loc?, ', creative_loc)
             new_loc = new_loc.replace('Location Name:', '').strip()
             new_locs_list = tidy_llm_list_string(new_loc, strip_nums=True)
@@ -376,7 +385,7 @@ def decompose(current_task):
     ## Get future location
     if idx + 1 < len(story_point_list_present):
         creative_future_loc = creative_ai(
-            f"Given the story, what is the place within {gen_loc} that {the_characters} must be before they start to {story_point_list_present[idx + 1]}? Only respond with the name of one location, nothing more")
+            f"Given the story, what is the place within {gen_loc} that {characters_str} must be before they start to {story_point_list_present[idx + 1]}? Only respond with the name of one location, nothing more")
         print('creative_future_loc, ',
               creative_future_loc)  # where is the most likely/best starting point for a task like ________
 
@@ -403,14 +412,14 @@ def decompose(current_task):
     str_of_subtasks = grammatical_list_str(current_task.subtasks, 'name')
     print('str_of_subtasks: ', str_of_subtasks)
     deepen_response = qa_ai(
-        f"[Question] \n True or False: it is possible for {the_characters} to successfully '{point}' by only {str_of_subtasks}. [Context] \n story: \n {story}.")
+        f"[Question] \n True or False: it is possible for {characters_str} to successfully '{current_task_description}' by only {str_of_subtasks}. [Context] \n story: \n {story}.")
     if deepen_response[0:4] == 'True':
         deepen_tf = True
     elif deepen_response[0:5] == 'False':
         deepen_tf = False
         # TODO balloch: add the schema for this question that breaks it down into "Subject" "Verb" "Object"
         deepen_description = creative_ai(
-            prompt=f"Given the story and the answer {deepen_response} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{point}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'"),
+            prompt=f"Given the story and the answer {deepen_response} whether the current subtasks are enough, what else needs to be done besides {str_of_subtasks} to successfully '{current_task_description}'? Describe the task in one sentence with only one verb. \n Example: 'The characters must find the dragon.'"),
 
         print('##deepen_subtask, ', deepen_description)
         deepen_subtask = Task(
